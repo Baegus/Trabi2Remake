@@ -1,0 +1,5 @@
+public/trabi2data
+*.map
+public/phaser.js
+public/*.js
+public/*.css
