@@ -1,4 +1,5 @@
 import FGFPlugin from "./formats/fgf";
+import PKGPlugin from "./formats/pkg";
 import Preloader from "./scenes/Preloader";
 import MainMenu from "./scenes/Menus/MainMenu"
 import CreditsMenu from "./scenes/Menus/CreditsMenu"
@@ -28,7 +29,8 @@ const config = {
 	},
 	plugins: {
 		global: [
-			{ key: 'FGFPlugin', plugin: FGFPlugin, start: true }
+			{ key: 'FGFPlugin', plugin: FGFPlugin, start: true },
+			{ key: 'PKGPlugin', plugin: PKGPlugin, start: true }
 		]
 	},
 	dom: {

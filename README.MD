@@ -11,7 +11,7 @@ The goal of this project is **NOT a full decompilation** or a 1:1 replication of
  - [x] **FGF** *(full-screen 640x480 graphics for intros, backgrounds etc.)*
  - [x] **FSF** *(sprite/atlas graphics)*
  - [ ] **MNU** *(definitions of menu screens); ~70% progress*
- - [ ] **PKG** *(textures for 3D models, likely just packaged FSF files); ~80% progress*
+ - [x] **PKG** *(textures for 3D models, pretty much identical to FGF files)
  - [x] **MAP** (level/track tilesets)
  - [ ] **3D** *(3D objects, presumably)*
  - [ ] **3DM** (likely the positions of given 3D models within each track)

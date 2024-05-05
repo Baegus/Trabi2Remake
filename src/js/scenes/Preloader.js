@@ -89,6 +89,16 @@ export default class Preloader extends Phaser.Scene {
 			this.load.fsf(filename,`trabi2data/${filename}`);
 		});
 
+		// Load texture PKGs:
+		const texturePackages = [
+			"TEXTURY.PKG",  // default textures
+			"TEXTURY2.PKG", // winter textures
+		];
+		texturePackages.forEach((filename) => {
+			this.load.pkg(filename,`trabi2data/${filename}`);
+		});
+
+
 		// Cheeky addition to the credits menu page:
 		this.load.image("remakeCredits","img/remakeCredits.png");
 	}
