@@ -98,6 +98,17 @@ export default class Preloader extends Phaser.Scene {
 			this.load.pkg(filename,`trabi2data/${filename}`);
 		});
 
+		// Load sounds and music from SNDs:
+		const soundFiles = [
+			// "INTRO.SND",  // intro sounds
+			// "MENU.SND", // menu sounds
+			"HUDBA.SND",  // music tracks
+			// "TRABANT.SND", // engine sounds
+		];
+		soundFiles.forEach((filename) => {
+			this.load.snd(filename,`trabi2data/${filename}`);
+		});
+
 
 		// Cheeky addition to the credits menu page:
 		this.load.image("remakeCredits","img/remakeCredits.png");
@@ -111,9 +122,9 @@ export default class Preloader extends Phaser.Scene {
 		 // For whatever reason, tracks are out of order:
 		this.registry.set("mapOrder",[7,8,1,5,6,9,4,3,10,2]);
 
-		// this.scene.start("mainMenu"); // DEBUG MAIN MENU
+		this.scene.start("mainMenu"); // DEBUG MAIN MENU
 		// this.scene.start("singlePlayer"); // DEBUG SINGLEPLAYER MENU
-		this.scene.start("raceMenu"); // DEBUG RACE MENU
+		// this.scene.start("raceMenu"); // DEBUG RACE MENU
 		// this.scene.start("race"); // DEBUG RACE
 	}
 }

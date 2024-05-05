@@ -18,7 +18,7 @@ The goal of this project is **NOT a full decompilation** or a 1:1 replication of
  - [ ] **GHO** *(lap times for the Ghost Race mode, which is not yet implemented)*
  - [ ] **IL1, IL2** *(most likely AI racer definitions)*
  - [ ] **TRR** *(most likely replay data)*
- - [ ] **SND** *(sounds and music); ~90% progress**
+ - [x] **SND** *(sounds and music)*
  - [ ] **SAV** *(save files); ~50% progress*
  - [ ] **SB** *(probably just a list of all assets)*
  - [ ] **LAP** *(unknown)*

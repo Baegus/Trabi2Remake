@@ -1,5 +1,5 @@
 import { textToWholePixels } from "../../modules/utils";
-import { playSound } from "../../modules/audio";
+import { playSound, playMusicTrack } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 
@@ -86,7 +86,7 @@ export default class MainMenu extends Phaser.Scene {
 			}
 		});
 
-
+		playMusicTrack(this,2);
 	}
 		
 }

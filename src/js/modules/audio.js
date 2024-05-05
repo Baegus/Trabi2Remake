@@ -75,4 +75,8 @@ const playSound = (scene, name, config=false) => {
 	return sample;
 }
 
-export { toggleMute, playSound }
+const playMusicTrack = (scene, track, config=false) => {
+	playSound(scene,`HUDBA.SND-SND${track}`,config);
+};
+
+export { toggleMute, playSound, playMusicTrack }
