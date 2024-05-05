@@ -53,60 +53,6 @@ class SNDFile extends Phaser.Loader.FileTypes.BinaryFile {
 		return new Uint8Array(buffer);
 	}
 
-
-	async processGraphics (data) {
-		return new Promise(async (resolve,reject) => {
-			const headerSize = 4;
-			const sizeHeader = new Uint16Array(data.buffer.slice(0, headerSize));
-			const imgWidth = sizeHeader[0];
-			const imgHeight = sizeHeader[1];
-
-			const canvas = document.createElement("canvas");
-			const ctx = canvas.getContext("2d");
-
-			canvas.width = imgWidth;
-			canvas.height = imgHeight;
-			const imageData = ctx.createImageData(canvas.width, canvas.height);
-			let dataIndex = 0;
-			let pixelIndex = headerSize;
-
-			for (let y = 0; y < imgHeight; y++) {
-				for (let x = 0; x < imgWidth; x++) {
-					const value = data[pixelIndex] | (data[pixelIndex + 1] << 8);
-					let redValue = (value >> 11) & 0x1F;
-					let greenValue = (value >> 5) & 0x3F;
-					let blueValue = value & 0x1F;
-
-					redValue = (redValue * 255) / 31;
-					greenValue = (greenValue * 255) / 63;
-					blueValue = (blueValue * 255) / 31;
-
-					imageData.data[dataIndex++] = redValue;
-					imageData.data[dataIndex++] = greenValue;
-					imageData.data[dataIndex++] = blueValue;
-					imageData.data[dataIndex++] = 255;
-
-					pixelIndex += 2;
-				}
-			}
-		
-			await ctx.putImageData(imageData, 0, 0);
-			canvas.toBlob((blob) => {
-				const newImg = document.createElement("img");
-				const url = URL.createObjectURL(blob);
-				newImg.onload = () => {
-					resolve({
-						image: newImg,
-						frameWidth: imgWidth,
-						frameHeight: imgHeight,
-					});
-					URL.revokeObjectURL(url);
-				};
-				newImg.src = url;
-			},"image/png")
-		});
-	};
-
 	async unpackSND (data) {
 		const decodedFiles = [];
 		const fileCountHeaderLength = 2;
