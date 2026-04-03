@@ -48,6 +48,9 @@ export default class Race extends Phaser.Scene {
 		const tiles = this.tilemap.addTilesetImage(mapTextures);
 		const layer = this.tilemap.createLayer(0, tiles, 0, 0);
 
+		this.add.model3D(2200, 3200, "VEZ.3D", "TEXTURY.PKG");
+		// this.add.model3D(2300, 3200, "DEPO8.3D", "TEXTURY2.PKG");
+
 		const cursor = createCursor(this);
 
 		const cam = this.cameras.main;

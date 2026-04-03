@@ -9,11 +9,11 @@ export default class Preloader extends Phaser.Scene {
 	preload() {
 
 		// Load maps:
-		for (let i=1;i<=9;i++) {
-			const filename = `Trat0${i}.map`;
-			this.load.binary(filename,`trabi2data/${filename}`,Uint8Array);
+		const mapCount = 10;
+		for (let i = 1; i <= mapCount; i++) {
+			const filename = `Trat${i.toString().padStart(2, "0")}.map`;
+			this.load.binary(filename, `trabi2data/${filename}`, Uint8Array);
 		}
-		this.load.binary("Trat10.map","trabi2data/Trat10.map",Uint8Array);
 
 		// Load FGFs and FSFs:
 		const originalGraphicsFiles = [
@@ -96,6 +96,26 @@ export default class Preloader extends Phaser.Scene {
 		];
 		texturePackages.forEach((filename) => {
 			this.load.pkg(filename,`trabi2data/${filename}`);
+		});
+
+		// Load 3D models:
+		const modelFiles = [
+			"BOARD1H.3D",
+			"BOARD1V.3D",
+			"BOARD2H.3D",
+			"BOARD2V.3D",
+			"BOARD3H.3D",
+			"BOARD3V.3D",
+			"DEPO8.3D",
+			"MAN1H.3D",
+			"MAN1V.3D",
+			"MAN2H.3D",
+			"MAN2V.3D",
+			"SLOUPEK.3D",
+			"VEZ.3D",
+		];
+		modelFiles.forEach((filename) => {
+			this.load.threeD(filename,`trabi2data/${filename}`);
 		});
 
 		// Load sounds and music from SNDs:

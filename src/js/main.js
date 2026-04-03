@@ -1,6 +1,7 @@
 import FGFPlugin from "./formats/fgf";
 import PKGPlugin from "./formats/pkg";
 import SNDPlugin from "./formats/snd";
+import ThreeDPlugin from "./formats/3d";
 import Preloader from "./scenes/Preloader";
 import MainMenu from "./scenes/Menus/MainMenu"
 import CreditsMenu from "./scenes/Menus/CreditsMenu"
@@ -30,9 +31,10 @@ const config = {
 	},
 	plugins: {
 		global: [
-			{ key: 'FGFPlugin', plugin: FGFPlugin, start: true },
-			{ key: 'PKGPlugin', plugin: PKGPlugin, start: true },
-			{ key: 'SNDPlugin', plugin: SNDPlugin, start: true },
+			{ key: "FGFPlugin", plugin: FGFPlugin, start: true },
+			{ key: "PKGPlugin", plugin: PKGPlugin, start: true },
+			{ key: "SNDPlugin", plugin: SNDPlugin, start: true },
+			{ key: "ThreeDPlugin", plugin: ThreeDPlugin, start: true },
 		]
 	},
 	dom: {
