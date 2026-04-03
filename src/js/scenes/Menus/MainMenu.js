@@ -86,7 +86,10 @@ export default class MainMenu extends Phaser.Scene {
 			}
 		});
 
-		playMusicTrack(this,2);
+		if (this.registry.get("menuMusicPlaying") !== true) {
+			playMusicTrack(this,2);
+			this.registry.set("menuMusicPlaying", true);
+		}
 	}
 		
 }
