@@ -44,12 +44,15 @@ export default class Race extends Phaser.Scene {
 	create() {
 		this.events.off();
 
+		const toPx = (tileUnits) => tileUnits * this.tileSize;
+
 		const mapTextures = "POZ.FSF"; // TODO set according to map
 		const tiles = this.tilemap.addTilesetImage(mapTextures);
 		const layer = this.tilemap.createLayer(0, tiles, 0, 0);
 
-		this.add.model3D(2200, 3200, "VEZ.3D", "TEXTURY.PKG");
-		// this.add.model3D(2300, 3200, "DEPO8.3D", "TEXTURY2.PKG");
+		// this.add.rectangle(toPx(21), toPx(28), this.tileSize, this.tileSize, 0xff0000).setOrigin(0, 0);
+		this.add.model3D(toPx(21), toPx(28), "VEZ.3D", mapTextures3D);
+		this.add.model3D(toPx(22), toPx(28), "DEPO8.3D", mapTextures3D);
 
 		const cursor = createCursor(this);
 

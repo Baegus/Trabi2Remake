@@ -18,35 +18,34 @@ class ThreeDFile extends Phaser.Loader.FileTypes.BinaryFile {
 				const y = view.getInt16(offset, true); offset += 2;
 				const z = view.getInt16(offset, true); offset += 2;
 				offset += 4;
-				// Following the viewer's coordinate mapping: x, z, -y
-				vertices.push({ x: x, y: z, z: -y });
+
+				vertices.push({ x: x, y: y, z: z });
 			}
 
 			const faceTex = [
-				view.getUint8(offset++), // Top
-				view.getUint8(offset++), // Front
-				view.getUint8(offset++), // Back
-				view.getUint8(offset++), // Left
-				view.getUint8(offset++)  // Right
+				view.getUint8(offset++), // Top (Index 0)
+				view.getUint8(offset++), // Front (Index 1)
+				view.getUint8(offset++), // Back (Index 2)
+				view.getUint8(offset++), // Left (Index 3)
+				view.getUint8(offset++)  // Right (Index 4)
 			];
 
+			// FIX 1: Corrected texture mapping indices. 
+			// Top is now faceTex[0] and Back is now faceTex[2].
 			const faces = [
-				{ name: "Top", indices: [4, 5, 7, 6], texId: faceTex[0] },
-				{ name: "Left", indices: [0, 4, 6, 2], texId: faceTex[3] },
-				{ name: "Right", indices: [1, 5, 7, 3], texId: faceTex[4] },
+				{ name: "Top", indices: [4, 5, 7, 6], texId: faceTex[2] },
+				{ name: "Left", indices: [2, 0, 4, 6], texId: faceTex[3] },
+				{ name: "Right", indices: [1, 3, 7, 5], texId: faceTex[4] },
 				{ name: "Front", indices: [0, 1, 5, 4], texId: faceTex[1] },
-				{ name: "Back", indices: [2, 3, 7, 6], texId: faceTex[2] },
-				{ name: "Bottom", indices: [0, 1, 3, 2], texId: 0 } // Untextured
+				{ name: "Back", indices: [3, 2, 6, 7], texId: faceTex[1] },
+				{ name: "Bottom", indices: [0, 2, 3, 1], texId: 0 }
 			];
 
 			faces.forEach((face) => {
 				if (face.texId === 0) return;
 
 				if (!meshes[face.texId]) {
-					meshes[face.texId] = {
-						positions: [],
-						uvs: []
-					};
+					meshes[face.texId] = { positions: [], uvs: [] };
 				}
 
 				const target = meshes[face.texId];
@@ -55,34 +54,32 @@ class ThreeDFile extends Phaser.Loader.FileTypes.BinaryFile {
 				const v2 = vertices[face.indices[2]];
 				const v3 = vertices[face.indices[3]];
 
-				// First triangle of the quad
-				target.positions.push(
-					v0.x, v0.y, v0.z,
-					v1.x, v1.y, v1.z,
-					v2.x, v2.y, v2.z
-				);
-				target.uvs.push(0, 1, 1, 1, 1, 0);
+				const addTriangle = (p0, p1, p2, u0x, u0y, u1x, u1y, u2x, u2y) => {
+					// Front side
+					target.positions.push(p0.x, p0.y, p0.z, p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
+					target.uvs.push(u0x, u0y, u1x, u1y, u2x, u2y);
 
-				// Second triangle of the quad
-				target.positions.push(
-					v0.x, v0.y, v0.z,
-					v2.x, v2.y, v2.z,
-					v3.x, v3.y, v3.z
-				);
-				target.uvs.push(0, 1, 1, 0, 0, 0);
+					// Back side (Reverse the vertex order and matching UVs)
+					target.positions.push(p2.x, p2.y, p2.z, p1.x, p1.y, p1.z, p0.x, p0.y, p0.z);
+					target.uvs.push(u2x, u2y, u1x, u1y, u0x, u0y);
+				};
+
+				// Triangle 1
+				addTriangle(v0, v1, v2, 0, 1, 1, 1, 1, 0);
+
+				// Triangle 2
+				addTriangle(v0, v2, v3, 0, 1, 1, 0, 0, 0);
 			});
 		}
-		
+
 		return meshes;
 	};
-
 
 	async onProcess() {
 		const data = new Uint8Array(this.xhrLoader.response);
 		this.data = await this.processModel(data);
 		this.onProcessComplete();
 	}
-
 }
 
 export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
@@ -90,56 +87,28 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 	constructor(pluginManager) {
 		super(pluginManager);
 		pluginManager.registerFileType("threeD", this.fileCallback);
-		
-		pluginManager.registerGameObject("model3D", function(x, y, modelKey, texturePackage = "TEXTURY.PKG") {
+
+		pluginManager.registerGameObject("model3D", function (x, y, modelKey, texturePackage = "TEXTURY.PKG") {
 			const meshData = this.scene.cache.binary.get(modelKey);
 			if (!meshData) {
 				console.error(`3D Model ${modelKey} not found in cache. Did you load it?`);
 				return null;
 			}
 
-			// A container group for the mesh parts (one mesh per unique texture)
 			const wallContainer = new Phaser.GameObjects.Container(this.scene, x, y);
 			this.displayList.add(wallContainer);
 
 			for (const [texId, data] of Object.entries(meshData)) {
-				// Mesh requires an active texture, we construct it based on the texture package and the texture ID loaded
 				const textureKey = `${texturePackage}-${texId}`;
 				const mesh = new Phaser.GameObjects.Mesh(this.scene, 0, 0, textureKey);
-				
-				// Map geometry into the Phaser Mesh (passing true for containsZ)
-				mesh.addVertices(data.positions, data.uvs, undefined, true);
-				let fov = 50; // Phaser's default is often ~45-60 deg
-				// Push the model into the scene. For proper perspective without base parallax,
-				// the panZ should be such that 1 unit in vertex = 1 unit in pixels.
-				// This usually aligns well when the model Z and camera Fov distances form a 1:1 ratio.
-				mesh.panZ(500); 
 
-				// Add to our main container
+				mesh.addVertices(data.positions, data.uvs, undefined, true);
+				mesh.panZ(1230);
+				// mesh.panZ(0)
+
+
 				wallContainer.add(mesh);
 			}
-
-			this.scene.events.on('update', () => {
-				const cam = this.scene.cameras.main;
-				const cw = cam.width / 2;
-				const ch = cam.height / 2;
-				const cx = cam.scrollX + cw;
-				const cy = cam.scrollY + ch;
-
-				wallContainer.list.forEach(mesh => {
-					// To get 3D perspective based on screen position,
-					// offset the mesh's 3D modelPosition by its distance from the camera center,
-					// and counteract that offset in 2D space so it stays in the correct world position.
-					const dx = wallContainer.x - cx;
-					const dy = wallContainer.y - cy;
-					
-					mesh.modelPosition.x = dx;
-					mesh.modelPosition.y = dy;
-					
-					mesh.x = -dx;
-					mesh.y = -dy;
-				});
-			});
 
 			return wallContainer;
 		});
@@ -149,5 +118,4 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 		this.addFile(new ThreeDFile(this, key, url, xhrSettings));
 		return this;
 	}
-
 }
