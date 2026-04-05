@@ -7,6 +7,7 @@ export default class Preloader extends Phaser.Scene {
 	}
 
 	preload() {
+		this.loadingStartTime = performance.now();
 
 		// Load maps:
 		const mapCount = 10;
@@ -137,7 +138,9 @@ export default class Preloader extends Phaser.Scene {
 	}
 
 	create() {
-		this.registry.set("currentMap",1); // DEBUG
+		const endTime = performance.now();
+		console.log(`All files loaded in ${(endTime - this.loadingStartTime).toFixed(2)} ms`);
+		this.registry.set("currentMap",0); // DEBUG
 		this.registry.set("totalTeams",6);
 		this.registry.set("totalTires",3)
 		this.registry.set("totalMaps",10);
