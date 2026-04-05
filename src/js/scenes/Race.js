@@ -1,6 +1,7 @@
 import { textToWholePixels } from "../modules/utils";
 import { playSound } from "../modules/audio";
 import { createCursor } from "../modules/cursor";
+import { parse3DM } from "../modules/3dm";
 
 export default class Race extends Phaser.Scene {
 	constructor () {
@@ -35,9 +36,13 @@ export default class Race extends Phaser.Scene {
 			tilemapData.push(mapData.splice(0, mapWidth));
 		}
 
-		const tileSize = 100;
-		
-		this.tilemap = this.make.tilemap({ data: tilemapData, tileWidth: tileSize, tileHeight: tileSize });
+		this.tileSize = 100;
+
+		this.tilemap = this.make.tilemap({ data: tilemapData, tileWidth: this.tileSize, tileHeight: this.tileSize });
+
+		const modelPlacementFile = currentMapFile.replace(".map", ".3DM").toUpperCase();
+		const modelPlacementData = parse3DM(this.cache.binary.get(modelPlacementFile));
+		this.modelPlacements = modelPlacementData;
 		
 	}
 
@@ -47,12 +52,15 @@ export default class Race extends Phaser.Scene {
 		const toPx = (tileUnits) => tileUnits * this.tileSize;
 
 		const mapTextures = "POZ.FSF"; // TODO set according to map
+		const mapTextures3D = "TEXTURY.PKG"; // TODO set according to map
 		const tiles = this.tilemap.addTilesetImage(mapTextures);
 		const layer = this.tilemap.createLayer(0, tiles, 0, 0);
 
 		// this.add.rectangle(toPx(21), toPx(28), this.tileSize, this.tileSize, 0xff0000).setOrigin(0, 0);
-		this.add.model3D(toPx(21), toPx(28), "VEZ.3D", mapTextures3D);
-		this.add.model3D(toPx(22), toPx(28), "DEPO8.3D", mapTextures3D);
+
+		for (const model of this.modelPlacements) {
+			this.add.model3D(model.x, model.y, model.name, mapTextures3D);
+		}
 
 		const cursor = createCursor(this);
 

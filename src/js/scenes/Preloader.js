@@ -12,7 +12,9 @@ export default class Preloader extends Phaser.Scene {
 		const mapCount = 10;
 		for (let i = 1; i <= mapCount; i++) {
 			const filename = `Trat${i.toString().padStart(2, "0")}.map`;
+			const modelPlacementFilename = filename.replace(".map", ".3DM").toUpperCase();
 			this.load.binary(filename, `trabi2data/${filename}`, Uint8Array);
+			this.load.binary(modelPlacementFilename, `trabi2data/${modelPlacementFilename}`, Uint8Array);
 		}
 
 		// Load FGFs and FSFs:
