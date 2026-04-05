@@ -23,20 +23,19 @@ class ThreeDFile extends Phaser.Loader.FileTypes.BinaryFile {
 			}
 
 			const faceTex = [
-				view.getUint8(offset++), // Top (Index 0)
-				view.getUint8(offset++), // Front (Index 1)
-				view.getUint8(offset++), // Back (Index 2)
-				view.getUint8(offset++), // Left (Index 3)
-				view.getUint8(offset++)  // Right (Index 4)
+				view.getUint8(offset++),
+				view.getUint8(offset++),
+				view.getUint8(offset++),
+				view.getUint8(offset++),
+				view.getUint8(offset++) 
 			];
 
 			const faces = [
-				{ name: "Top", indices: [4, 5, 7, 6], texId: faceTex[2] },
-				{ name: "Left", indices: [2, 0, 4, 6], texId: faceTex[1] },
-				{ name: "Right", indices: [1, 3, 7, 5], texId: faceTex[1] },
-				{ name: "Front", indices: [0, 1, 5, 4], texId: faceTex[3] },
+				{ name: "Top", indices: [4, 5, 7, 6], texId: faceTex[0] },
+				{ name: "Front", indices: [0, 1, 5, 4], texId: faceTex[1] },
+				{ name: "Right", indices: [3, 1, 5, 7], texId: faceTex[2] },
+				{ name: "Left", indices: [2, 0, 4, 6], texId: faceTex[3] },
 				{ name: "Back", indices: [3, 2, 6, 7], texId: faceTex[4] },
-				{ name: "Bottom", indices: [0, 2, 3, 1], texId: 0 }
 			];
 
 			faces.forEach((face) => {
@@ -104,7 +103,7 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 			const zScale = fov * 0.1;
 
 			for (const [texId, data] of Object.entries(meshData)) {
-				const textureKey = `${texturePackage}-${texId}`;
+				const textureKey = `${texturePackage}-${texId-1}`;
 				// scale raw positions (x,y,z) by zScale for z component
 				const raw = data.positions;
 				const scaled = new Array(raw.length);
