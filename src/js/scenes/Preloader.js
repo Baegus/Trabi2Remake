@@ -140,16 +140,16 @@ export default class Preloader extends Phaser.Scene {
 	create() {
 		const endTime = performance.now();
 		console.log(`All files loaded in ${(endTime - this.loadingStartTime).toFixed(2)} ms`);
-		this.registry.set("currentMap",0); // DEBUG
+		this.registry.set("currentMap",2); // DEBUG
 		this.registry.set("totalTeams",6);
 		this.registry.set("totalTires",3)
 		this.registry.set("totalMaps",10);
 		 // For whatever reason, tracks are out of order:
 		this.registry.set("mapOrder",[7,8,1,5,6,9,4,3,10,2]);
 
-		this.scene.start("mainMenu"); // DEBUG MAIN MENU
+		// this.scene.start("mainMenu"); // DEBUG MAIN MENU
 		// this.scene.start("singlePlayer"); // DEBUG SINGLEPLAYER MENU
 		// this.scene.start("raceMenu"); // DEBUG RACE MENU
-		// this.scene.start("race"); // DEBUG RACE
+		this.scene.start("race"); // DEBUG RACE
 	}
 }
