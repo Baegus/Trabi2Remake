@@ -13,9 +13,14 @@ export default class Preloader extends Phaser.Scene {
 		const mapCount = 10;
 		for (let i = 1; i <= mapCount; i++) {
 			const filename = `Trat${i.toString().padStart(2, "0")}.map`;
-			const modelPlacementFilename = filename.replace(".map", ".3DM").toUpperCase();
+			const filenameUpper = filename.toUpperCase();
+			const modelPlacementFilename = filenameUpper.replace(".MAP", ".3DM");
+			const il1Filename = filename.replace(".map", ".il1");
+			const il2Filename = filename.replace(".map", ".il2");
 			this.load.binary(filename, `trabi2data/${filename}`, Uint8Array);
 			this.load.binary(modelPlacementFilename, `trabi2data/${modelPlacementFilename}`, Uint8Array);
+			this.load.binary(il1Filename, `trabi2data/${il1Filename}`, Uint8Array);
+			this.load.binary(il2Filename, `trabi2data/${il2Filename}`, Uint8Array);
 		}
 
 		// Load FGFs and FSFs:
@@ -140,7 +145,7 @@ export default class Preloader extends Phaser.Scene {
 	create() {
 		const endTime = performance.now();
 		console.log(`All files loaded in ${(endTime - this.loadingStartTime).toFixed(2)} ms`);
-		this.registry.set("currentMap",2); // DEBUG
+		this.registry.set("currentMap",0); // DEBUG
 		this.registry.set("totalTeams",6);
 		this.registry.set("totalTires",3)
 		this.registry.set("totalMaps",10);

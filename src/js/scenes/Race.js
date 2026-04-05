@@ -2,6 +2,7 @@ import { textToWholePixels } from "../modules/utils";
 import { playSound } from "../modules/audio";
 import { createCursor } from "../modules/cursor";
 import { parse3DM } from "../modules/3dm";
+import { parseIL } from "../modules/il";
 
 export default class Race extends Phaser.Scene {
 	constructor () {
@@ -26,7 +27,7 @@ export default class Race extends Phaser.Scene {
 		const mapOrder = this.registry.get("mapOrder");
 		const currentMap = mapOrder[this.registry.get("currentMap")];
 		const currentMapFile = currentMap>9 ? `Trat${[currentMap]}.map` : `Trat0${currentMap}.map`;
-		console.log(currentMapFile);
+		const currentMapFileUpper = currentMapFile.toUpperCase();
 		const binaryMapData = this.cache.binary.get(currentMapFile);
 		const mapData = Array.from(binaryMapData.slice(2));
 		const mapWidth  = binaryMapData[0]; // in tiles
@@ -40,10 +41,14 @@ export default class Race extends Phaser.Scene {
 
 		this.tilemap = this.make.tilemap({ data: tilemapData, tileWidth: this.tileSize, tileHeight: this.tileSize });
 
-		const modelPlacementFile = currentMapFile.replace(".map", ".3DM").toUpperCase();
+		const modelPlacementFile = currentMapFileUpper.replace(".MAP", ".3DM");
 		const modelPlacementData = parse3DM(this.cache.binary.get(modelPlacementFile));
 		this.modelPlacements = modelPlacementData;
-		
+
+		const il1File = this.cache.binary.get(currentMapFile.replace(".map",".il1"));
+		const il2File = this.cache.binary.get(currentMapFile.replace(".map",".il2"));
+		if (il1File) this.aiNodes1 = parseIL(il1File);
+		if (il2File) this.aiNodes2 = parseIL(il2File);
 	}
 
 	create() {
@@ -60,6 +65,31 @@ export default class Race extends Phaser.Scene {
 
 		for (const model of this.modelPlacements) {
 			this.add.model3D(model.x, model.y, model.name, mapTextures3D);
+		}
+
+		const aiNodesGraphics = this.add.graphics().setAlpha(0.5);
+		if (this.aiNodes1) {
+			aiNodesGraphics.lineStyle(2, 0x00ff00);
+			aiNodesGraphics.fillStyle(0x00ff00);
+			aiNodesGraphics.beginPath();
+			this.aiNodes1.forEach(node => {
+				aiNodesGraphics.lineTo(node.x, node.y);
+				aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
+			});
+			aiNodesGraphics.closePath();
+			aiNodesGraphics.strokePath();
+		}
+		if (this.aiNodes2) {
+			aiNodesGraphics.lineStyle(2, 0x0000ff);
+			aiNodesGraphics.fillStyle(0x0000ff);
+			aiNodesGraphics.beginPath();
+			this.aiNodes2.forEach(node => {
+				aiNodesGraphics.lineTo(node.x, node.y);
+				aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
+			});
+			aiNodesGraphics.closePath();
+			aiNodesGraphics.strokePath();
+
 		}
 
 		const cursor = createCursor(this);
