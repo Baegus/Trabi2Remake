@@ -125,12 +125,19 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 			const meshes = [];
 			const zScale = fov * 0.1;
 
+			let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
 			for (const batch of meshData) {
 				const textureKey = `${texturePackage}-${batch.texId-1}`;
 				// scale raw positions (x,y,z) by zScale for z component
 				const raw = batch.positions;
 				const scaled = new Array(raw.length);
 				for (let i = 0; i < raw.length; i += 3) {
+					if (raw[i] < minX) minX = raw[i];
+					if (raw[i] > maxX) maxX = raw[i];
+					if (raw[i + 1] < minY) minY = raw[i + 1];
+					if (raw[i + 1] > maxY) maxY = raw[i + 1];
+
 					scaled[i] = raw[i];
 					scaled[i + 1] = raw[i + 1];
 					scaled[i + 2] = raw[i + 2] * zScale;
@@ -145,16 +152,25 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 				meshes.push(mesh);
 			}
 
+			const centerX = minX === Infinity ? 0 : (minX + maxX) / 2;
+			const centerY = minY === Infinity ? 0 : (minY + maxY) / 2;
+
 			const updatePerspective = () => {
 				if (!wallContainer.scene) return;
 
 				const camera = wallContainer.scene.cameras.main;
 
 				const dx = wallContainer.x - camera.midPoint.x;
-				const dy = (wallContainer.y - camera.midPoint.y);
+				const dy = wallContainer.y - camera.midPoint.y;
+				
+				const distDx = (wallContainer.x + centerX) - camera.midPoint.x;
+				const distDy = (wallContainer.y + centerY) - camera.midPoint.y;
+				const dist = Math.sqrt(distDx * distDx + distDy * distDy);
 
-				// Painter's algorithm for top-down perspective:
-				wallContainer.depth = 1000000 - Math.sqrt(dx * dx + dy * dy);
+				// Primary sort key = distance from camera
+				// In a top-down "leaning" perspective, objects closer to the camera
+				// project their tops outwards, so they must be drawn ON TOP of objects further away.
+				wallContainer.depth = 1000000 - dist;
 
 				for (const mesh of meshes) {
 					mesh.x = -dx;
