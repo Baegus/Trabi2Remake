@@ -52,7 +52,7 @@ export function parse3DM(data) {
 		if (inst.y > maxY) maxY = inst.y;
 		return {
 			x: inst.x,
-			y: inst.y - 100,
+			y: inst.y,
 			name: models[inst.modelIndex-1] || undefined
 		}
 	});

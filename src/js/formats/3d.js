@@ -15,7 +15,7 @@ class ThreeDFile extends Phaser.Loader.FileTypes.BinaryFile {
 			const vertices = [];
 			for (let v = 0; v < 8; v++) {
 				const x = view.getInt16(offset, true); offset += 2;
-				const y = view.getInt16(offset, true); offset += 2;
+				const y = -view.getInt16(offset, true); offset += 2;
 				const z = view.getInt16(offset, true); offset += 2;
 				offset += 4;
 
@@ -30,14 +30,12 @@ class ThreeDFile extends Phaser.Loader.FileTypes.BinaryFile {
 				view.getUint8(offset++)  // Right (Index 4)
 			];
 
-			// FIX 1: Corrected texture mapping indices. 
-			// Top is now faceTex[0] and Back is now faceTex[2].
 			const faces = [
 				{ name: "Top", indices: [4, 5, 7, 6], texId: faceTex[2] },
-				{ name: "Left", indices: [2, 0, 4, 6], texId: faceTex[3] },
-				{ name: "Right", indices: [1, 3, 7, 5], texId: faceTex[4] },
-				{ name: "Front", indices: [0, 1, 5, 4], texId: faceTex[1] },
-				{ name: "Back", indices: [3, 2, 6, 7], texId: faceTex[1] },
+				{ name: "Left", indices: [2, 0, 4, 6], texId: faceTex[1] },
+				{ name: "Right", indices: [1, 3, 7, 5], texId: faceTex[1] },
+				{ name: "Front", indices: [0, 1, 5, 4], texId: faceTex[3] },
+				{ name: "Back", indices: [3, 2, 6, 7], texId: faceTex[4] },
 				{ name: "Bottom", indices: [0, 2, 3, 1], texId: 0 }
 			];
 
