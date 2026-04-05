@@ -98,17 +98,55 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 			const wallContainer = new Phaser.GameObjects.Container(this.scene, x, y);
 			this.displayList.add(wallContainer);
 
+			const fov = 45; // Phaser's default Mesh FOV
+			const gameHeight = this.scene.scale.height;
+			const perfectPanZ = ((gameHeight / 2) / Math.tan(Phaser.Math.DegToRad(fov / 2))) * 2;
+
+			const meshes = [];
+			const zScale = fov * 0.1;
+
 			for (const [texId, data] of Object.entries(meshData)) {
 				const textureKey = `${texturePackage}-${texId}`;
+				// scale raw positions (x,y,z) by zScale for z component
+				const raw = data.positions;
+				const scaled = new Array(raw.length);
+				for (let i = 0; i < raw.length; i += 3) {
+					scaled[i] = raw[i];
+					scaled[i + 1] = raw[i + 1];
+					scaled[i + 2] = raw[i + 2] * zScale;
+				}
+				const uvs = data.uvs;
+
 				const mesh = new Phaser.GameObjects.Mesh(this.scene, 0, 0, textureKey);
-
-				mesh.addVertices(data.positions, data.uvs, undefined, true);
-				mesh.panZ(1230);
-				// mesh.panZ(0)
-
-
+				mesh.addVertices(scaled, uvs, undefined, true);
+				mesh.panZ(perfectPanZ);
 				wallContainer.add(mesh);
+				meshes.push(mesh);
 			}
+
+			const updatePerspective = () => {
+				if (!wallContainer.scene) return;
+
+				const camera = wallContainer.scene.cameras.main;
+
+				const dx = wallContainer.x - camera.midPoint.x;
+				const dy = (wallContainer.y - camera.midPoint.y);
+
+				for (const mesh of meshes) {
+					mesh.x = -dx;
+					mesh.y = -dy;
+					mesh.modelPosition.x = dx;
+					mesh.modelPosition.y = -dy;
+				}
+			};
+
+			updatePerspective();
+
+			this.scene.events.on("preupdate", updatePerspective);
+
+			wallContainer.on("destroy", () => {
+				this.scene.events.off("preupdate", updatePerspective);
+			});
 
 			return wallContainer;
 		});
