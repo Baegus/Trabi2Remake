@@ -165,12 +165,10 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 				
 				const distDx = (wallContainer.x + centerX) - camera.midPoint.x;
 				const distDy = (wallContainer.y + centerY) - camera.midPoint.y;
-				const dist = Math.sqrt(distDx * distDx + distDy * distDy);
-
-				// Primary sort key = distance from camera
-				// In a top-down "leaning" perspective, objects closer to the camera
-				// project their tops outwards, so they must be drawn ON TOP of objects further away.
-				wallContainer.depth = 1000000 - dist;
+				
+				let depthVal = wallContainer.y + distDy; // Base sorting on Y + relative camera offset
+				
+				wallContainer.depth = 2000 + (100000 - Math.sqrt(distDx * distDx + distDy * distDy)) * 0.01 + (wallContainer.y * 0.001);
 
 				for (const mesh of meshes) {
 					mesh.x = -dx;
