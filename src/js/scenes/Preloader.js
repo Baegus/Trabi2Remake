@@ -23,6 +23,11 @@ export default class Preloader extends Phaser.Scene {
 			const il2Filename = filename.replace(".map", ".il2");
 			this.load.binary(il1Filename, `trabi2data/${il1Filename}`, Uint8Array);
 			this.load.binary(il2Filename, `trabi2data/${il2Filename}`, Uint8Array);
+			// SP1/SP2 files (additional sprite positions, from ONIKY.FSF and DIVACI.FSF):
+			const sp1Filename = filename.replace(".map", ".sp1");
+			const sp2Filename = filename.replace(".map", ".sp2");
+			this.load.binary(sp1Filename, `trabi2data/${sp1Filename}`, Uint8Array);
+			this.load.binary(sp2Filename, `trabi2data/${sp2Filename}`, Uint8Array);
 		}
 
 		// Load FGFs and FSFs:
@@ -91,8 +96,13 @@ export default class Preloader extends Phaser.Scene {
 			"OK5.FSF",         // OK/back button
 
 			// MAP TILES:
-			"POZ.FSF",
-			"POZ2.FSF",
+			"POZ.FSF", // default map tiles
+			"POZ2.FSF", // winter map tiles
+
+			// ADDITIONAL OVERLAY MAP TILES:
+			"ONIKY.FSF",   // sprites with positions defined in SP1 files
+			"ONIKY2.FSF",   // winter sprites with positions defined in SP1 files
+			"DIVACI.FSF",  // spectator sprites with positions defined in SP2 files
 
 		];
 		originalGraphicsFiles.forEach((filename) => {

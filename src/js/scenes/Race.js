@@ -3,6 +3,7 @@ import { playSound } from "../modules/audio";
 import { createCursor } from "../modules/cursor";
 import { parse3DM } from "../modules/3dm";
 import { parseIL } from "../modules/il";
+import { parseSP1SP2 } from "../modules/sp1sp2";
 
 export default class Race extends Phaser.Scene {
 	constructor () {
@@ -24,11 +25,14 @@ export default class Race extends Phaser.Scene {
 	}
 
 	preload() {
-		const mapOrder = this.registry.get("mapOrder");
-		const currentMap = mapOrder[this.registry.get("currentMap")];
+		const scene = this;
+		const mapOrder = scene.registry.get("mapOrder");
+		const currentMap = mapOrder[scene.registry.get("currentMap")];
 		const currentMapFile = currentMap>9 ? `Trat${[currentMap]}.map` : `Trat0${currentMap}.map`;
 		const currentMapFileUpper = currentMapFile.toUpperCase();
-		const binaryMapData = this.cache.binary.get(currentMapFile);
+		console.log("Current map file:", currentMapFile);
+		// Parse and make the main tilemap:
+		const binaryMapData = scene.cache.binary.get(currentMapFile);
 		const mapData = Array.from(binaryMapData.slice(2));
 		const mapWidth  = binaryMapData[0]; // in tiles
 		const mapHeight = binaryMapData[1]; // in tiles
@@ -37,53 +41,74 @@ export default class Race extends Phaser.Scene {
 			tilemapData.push(mapData.splice(0, mapWidth));
 		}
 
-		this.tileSize = 100;
+		scene.tileSize = 100;
+		scene.tilemap = scene.make.tilemap({ data: tilemapData, tileWidth: scene.tileSize, tileHeight: scene.tileSize });
 
-		this.tilemap = this.make.tilemap({ data: tilemapData, tileWidth: this.tileSize, tileHeight: this.tileSize });
-
+		// Get 3D model placements:
 		const modelPlacementFile = currentMapFileUpper.replace(".MAP", ".3DM");
-		const modelPlacementData = parse3DM(this.cache.binary.get(modelPlacementFile));
-		this.modelPlacements = modelPlacementData;
+		const modelPlacementData = parse3DM(scene.cache.binary.get(modelPlacementFile));
+		scene.modelPlacements = modelPlacementData;
 
-		const il1File = this.cache.binary.get(currentMapFile.replace(".map",".il1"));
-		const il2File = this.cache.binary.get(currentMapFile.replace(".map",".il2"));
-		if (il1File) this.aiNodes1 = parseIL(il1File);
-		if (il2File) this.aiNodes2 = parseIL(il2File);
+		// Get AI node positions if they exist:
+		const il1File = scene.cache.binary.get(currentMapFile.replace(".map",".il1"));
+		const il2File = scene.cache.binary.get(currentMapFile.replace(".map",".il2"));
+		if (il1File) scene.aiNodes1 = parseIL(il1File);
+		if (il2File) scene.aiNodes2 = parseIL(il2File);
+
+		// Parse SP1+SP2 additional sprite data
+		const sp1Parsed = parseSP1SP2(scene, currentMapFile.replace(".map", ".sp1"));
+		const sp2Parsed = parseSP1SP2(scene, currentMapFile.replace(".map", ".sp2"));
+
+		// Save parsed entries for placing exact images later in create()
+		scene.additionalSprites1Entries = sp1Parsed.entries || [];
+		scene.additionalSprites2Entries = sp2Parsed.entries || [];
 	}
 
 	create() {
-		this.events.off();
+		const scene = this;
+		scene.events.off();
 
-		const toPx = (tileUnits) => tileUnits * this.tileSize;
+		const toPx = (tileUnits) => tileUnits * scene.tileSize;
 
 		const mapTextures = "POZ.FSF"; // TODO set according to map
 		const mapTextures3D = "TEXTURY.PKG"; // TODO set according to map
-		const tiles = this.tilemap.addTilesetImage(mapTextures);
-		const layer = this.tilemap.createLayer(0, tiles, 0, 0);
+		const mapTexturesSP1 = "ONIKY.FSF"; // TODO set according to map
+		const mapTexturesSP2 = "DIVACI.FSF";
+		const tiles = scene.tilemap.addTilesetImage(mapTextures);
+		const layer = scene.tilemap.createLayer(0, tiles, 0, 0);
 
-		// this.add.rectangle(toPx(21), toPx(28), this.tileSize, this.tileSize, 0xff0000).setOrigin(0, 0);
-
-		for (const model of this.modelPlacements) {
-			this.add.model3D(model.x, model.y, model.name, mapTextures3D);
+		for (const e of scene.additionalSprites1Entries) {
+			const image = scene.add.image(e.x, e.y, mapTexturesSP1, e.frame).setOrigin(0, 0).setDepth(2);
 		}
 
-		const aiNodesGraphics = this.add.graphics().setAlpha(0.5);
-		if (this.aiNodes1) {
+		for (const e of scene.additionalSprites2Entries) {
+			const image = scene.add.image(e.x, e.y, mapTexturesSP2, e.frame).setOrigin(0, 0).setDepth(2);
+		}
+
+
+		// scene.add.rectangle(toPx(21), toPx(28), scene.tileSize, scene.tileSize, 0xff0000).setOrigin(0, 0);
+
+		for (const model of scene.modelPlacements) {
+			scene.add.model3D(model.x, model.y, model.name, mapTextures3D);
+		}
+
+		const aiNodesGraphics = scene.add.graphics().setAlpha(0.5);
+		if (scene.aiNodes1) {
 			aiNodesGraphics.lineStyle(2, 0x00ff00);
 			aiNodesGraphics.fillStyle(0x00ff00);
 			aiNodesGraphics.beginPath();
-			this.aiNodes1.forEach(node => {
+			scene.aiNodes1.forEach(node => {
 				aiNodesGraphics.lineTo(node.x, node.y);
 				aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
 			});
 			aiNodesGraphics.closePath();
 			aiNodesGraphics.strokePath();
 		}
-		if (this.aiNodes2) {
+		if (scene.aiNodes2) {
 			aiNodesGraphics.lineStyle(2, 0x0000ff);
 			aiNodesGraphics.fillStyle(0x0000ff);
 			aiNodesGraphics.beginPath();
-			this.aiNodes2.forEach(node => {
+			scene.aiNodes2.forEach(node => {
 				aiNodesGraphics.lineTo(node.x, node.y);
 				aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
 			});
@@ -92,22 +117,23 @@ export default class Race extends Phaser.Scene {
 
 		}
 
-		this._synOverlay = window.SYNDebug.createInteractiveOverlay("POZ.SYN", this, this.tilemap);
+		// scene._synOverlay = window.SYNDebug.createInteractiveOverlay("POZ.SYN", scene, scene.tilemap);
 
-		const cursor = createCursor(this);
+		const cursor = createCursor(scene);
 
-		const cam = this.cameras.main;
+		const cam = scene.cameras.main;
 
 		cam.scrollX = 2036;
 		cam.scrollY = 2913;
+		
 
-		this.input.on("pointermove", function (p) {
+		scene.input.on("pointermove", function (p) {
 			if (!p.isDown) return;
 			cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
 			cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
 		});
 
-		this.input.on("wheel", function (e) {
+		scene.input.on("wheel", function (e) {
 			if (!e.event.shiftKey) return;
 			const amount = (e.deltaY<0?-0.1:0.1);
 			cam.setZoom(cam.zoom - amount);

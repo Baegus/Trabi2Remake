@@ -11,7 +11,7 @@ The goal of this project is **NOT a full decompilation** or a 1:1 replication of
  - [x] **FGF** *(full-screen 640x480 graphics for intros, backgrounds etc.)*
  - [x] **FSF** *(sprite/atlas graphics)*
  - [ ] **MNU** *(definitions of menu screens); ~70% progress*
- - [x] **PKG** *(textures for 3D models, pretty much identical to FGF files)
+ - [x] **PKG** *(textures for 3D models, pretty much identical to FGF files)*
  - [x] **MAP** *(level/track tilesets)*
  - [x] **3D** *(3D objects)*
  - [x] **3DM** *(positions of 3D models within each track)*
@@ -23,5 +23,5 @@ The goal of this project is **NOT a full decompilation** or a 1:1 replication of
  - [ ] **SB** *(probably just a list of all assets)*
  - [ ] **LAP** *(unknown)*
  - [ ] **PAR** *(unknown)*
- - [ ] **SP1, SP2** *(unknown)*
+ - [x] **SP1, SP2** *(positions of additional sprites from ONIKY.FSF and DIVACI.FSF)*
  - [x] **SYN** *(bitmask tiles for defining track turns)*
