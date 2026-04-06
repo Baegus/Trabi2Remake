@@ -13,15 +13,15 @@ The goal of this project is **NOT a full decompilation** or a 1:1 replication of
  - [ ] **MNU** *(definitions of menu screens); ~70% progress*
  - [x] **PKG** *(textures for 3D models, pretty much identical to FGF files)
  - [x] **MAP** *(level/track tilesets)*
- - [ ] **3D** *(3D objects); ~70% progress*
- - [x] **3DM** *(positions of 3D models within each track); ~90% progress*
+ - [x] **3D** *(3D objects)*
+ - [x] **3DM** *(positions of 3D models within each track)*
  - [ ] **GHO** *(lap times for the Ghost Race mode, which is not yet implemented)*
- - [ ] **IL1, IL2** *(most likely AI racer definitions)*
- - [ ] **TRR** *(most likely replay data)*
+ - [x] **IL1, IL2** *(AI node positions)*
+ - [x] **TRR** *(replay data - fully parsed, but not yet implemented)*
  - [x] **SND** *(sounds and music)*
  - [ ] **SAV** *(save files); ~50% progress*
  - [ ] **SB** *(probably just a list of all assets)*
  - [ ] **LAP** *(unknown)*
  - [ ] **PAR** *(unknown)*
  - [ ] **SP1, SP2** *(unknown)*
- - [ ] **SYN** *(unknown)*
+ - [x] **SYN** *(bitmask tiles for defining track turns)*
