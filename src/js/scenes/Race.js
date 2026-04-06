@@ -4,6 +4,7 @@ import { createCursor } from "../modules/cursor";
 import { parse3DM } from "../modules/3dm";
 import { parseIL } from "../modules/il";
 import { parseSP1SP2 } from "../modules/sp1sp2";
+import { createCar } from "../modules/car";
 
 export default class Race extends Phaser.Scene {
 	constructor () {
@@ -12,11 +13,7 @@ export default class Race extends Phaser.Scene {
 			maxLights: 30,
 			physics: {
 				arcade: {
-					// debug: true
-				},
-				matter: {
-					// debug: true,
-					// gravity: { y: 0.5 }
+					debug: true
 				}
 			}
 		});
@@ -85,6 +82,9 @@ export default class Race extends Phaser.Scene {
 			const image = scene.add.image(e.x, e.y, mapTexturesSP2, e.frame).setOrigin(0, 0).setDepth(2);
 		}
 
+		scene.cars = [];
+		scene.playerCar = createCar(scene, toPx(23), toPx(32), 2);
+		scene.cars.push(scene.playerCar);
 
 		// scene.add.rectangle(toPx(21), toPx(28), scene.tileSize, scene.tileSize, 0xff0000).setOrigin(0, 0);
 
@@ -129,6 +129,7 @@ export default class Race extends Phaser.Scene {
 
 		scene.input.on("pointermove", function (p) {
 			if (!p.isDown) return;
+			cam.stopFollow();
 			cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
 			cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
 		});
@@ -138,6 +139,8 @@ export default class Race extends Phaser.Scene {
 			const amount = (e.deltaY<0?-0.1:0.1);
 			cam.setZoom(cam.zoom - amount);
 		});
+
+		scene.scene.launch("hud");
 	}
 		
 }

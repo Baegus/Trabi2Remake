@@ -10,6 +10,7 @@ import SinglePlayerMenu from "./scenes/Menus/SinglePlayerMenu"
 import RaceMenu from "./scenes/Menus/RaceMenu"
 import CarSettingsMenu from "./scenes/Menus/CarSettingsMenu"
 import Race from "./scenes/Race"
+import HUD from "./scenes/HUD"
 
 const config = {
 	type: Phaser.WEBGL,
@@ -50,6 +51,7 @@ const config = {
 		CarSettingsMenu,
 		CreditsMenu,
 		Race,
+		HUD,
 	],
 };
 

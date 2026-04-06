@@ -104,6 +104,14 @@ export default class Preloader extends Phaser.Scene {
 			"ONIKY2.FSF",   // winter sprites with positions defined in SP1 files
 			"DIVACI.FSF",  // spectator sprites with positions defined in SP2 files
 
+			// CAR SPRITES:
+			"TRABANT.FSF", // all Trabant sprites
+
+			// HUD:
+			"TACHO.FSF", // speedometer
+			"OBRYSY.FSF", // car damage indicators
+
+
 		];
 		originalGraphicsFiles.forEach((filename) => {
 			this.load.fsf(filename,`trabi2data/${filename}`);
