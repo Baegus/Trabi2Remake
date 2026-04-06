@@ -139,7 +139,7 @@ export default class SYNPlugin extends Phaser.Plugins.BasePlugin {
 }
 
 // Debug helper: call window.SYNDebug.drawOverlay(key, scene, tilemap, options)
-// options: { alpha, cols, msbFirst, swapAxis, invert }
+// options: { alpha, invert }
 if (!window.SYNDebug) {
 	window.SYNDebug = {};
 }
@@ -150,7 +150,7 @@ window.SYNDebug.drawOverlay = function(key, scene, tilemap, options = {}) {
 		console.warn('SYN overlay: no parsed record for', key);
 		return;
 	}
-	const opts = Object.assign({ alpha: 0.85, msbFirst: true, swapAxis: true, invert: false, indexOffset: 0 }, options);
+	const opts = Object.assign({ alpha: 0.85, invert: true }, options);
 
 	// Compose an overlay canvas sized to the tilemap world pixels and draw each
 	// SYN tile at the corresponding tile position so it lines up with the map.
@@ -161,7 +161,7 @@ window.SYNDebug.drawOverlay = function(key, scene, tilemap, options = {}) {
 	const mapPixelHeight = tilemap.height * tilemap.tileHeight;
 
 	const mapSequence = [
-		{ type: 0, count: 6  },
+		{ type: 0, count: 7  },
 		{ type: 1, count: 11 },
 		{ type: 0, count: 1 },
 		{ type: 1, count: 1 },
@@ -227,44 +227,58 @@ window.SYNDebug.drawOverlay = function(key, scene, tilemap, options = {}) {
 		for (let tx = 0; tx < tilemap.width; tx++) {
 			const tile = tilemap.getTileAt(tx, ty);
 			if (!tile) continue;
-			// Phaser's tile.index is 1-based (0 means empty/no tile) for the first tileset
-			let tileId = tile.index - 1; 
-			
+			const tileId = tile.index;
+
+			const destX = tx * tilemap.tileWidth;
+			const destY = ty * tilemap.tileHeight;
+			const alphaByte = Math.floor(255 * opts.alpha);
+
+			// If tileId is 0, mask the whole tile (fill entire tile rectangle)
+			if ([0, 31, 44, 54, 57].includes(tileId)) {
+				for (let y = 0; y < TILE_H; y++) {
+					for (let x = 0; x < TILE_W; x++) {
+						const globalX = destX + x;
+						const globalY = destY + y;
+						if (globalX < 0 || globalX >= canvas.width || globalY < 0 || globalY >= canvas.height) continue;
+						const pxIdx = (globalY * canvas.width + globalX) * 4;
+						imgData.data[pxIdx + 0] = 255;
+						imgData.data[pxIdx + 1] = 170;
+						imgData.data[pxIdx + 2] = 0;
+						imgData.data[pxIdx + 3] = alphaByte;
+					}
+				}
+				continue;
+			}
+
 			// Get synIndex from our map
 			const baseSynIndex = tileIndexToSynIndex[tileId];
 			if (baseSynIndex === undefined) continue;
-			
-			const synIndex = (baseSynIndex + opts.indexOffset + record.tileCount) % record.tileCount;
+
+			const synIndex = (baseSynIndex + record.tileCount) % record.tileCount;
 			if (synIndex < 0 || synIndex >= record.tileCount) continue;
 
 			const block = record.rawTiles[synIndex];
 
 			// draw the tile's bits into the correct position on the map canvas
-			const destX = tx * tilemap.tileWidth;
-			const destY = ty * tilemap.tileHeight;
-
 			for (let y = 0; y < TILE_H; y++) {
 				for (let x = 0; x < TILE_W; x++) {
-					let bitIndex = opts.swapAxis ? (x * TILE_H + y) : (y * TILE_W + x);
+					let bitIndex = (y * TILE_W + x);
 					const byteIdx = Math.floor(bitIndex / 8);
 					const bitOffset = bitIndex % 8;
 					const byte = block[byteIdx];
 					let bit = ((byte >> (7 - bitOffset)) & 1);
-					
+
 					if (opts.invert) bit = bit ? 0 : 1;
 					if (!bit) continue; // leave transparent
 
-					let pX = opts.flipX ? (TILE_W - 1 - x) : x;
-					let pY = opts.flipY ? (TILE_H - 1 - y) : y;
-					
-					const globalX = destX + pX;
-					const globalY = destY + pY;
+					const globalX = destX + x;
+					const globalY = destY + y;
 					if (globalX < 0 || globalX >= canvas.width || globalY < 0 || globalY >= canvas.height) continue;
 					const pxIdx = (globalY * canvas.width + globalX) * 4;
 					imgData.data[pxIdx + 0] = 255;
 					imgData.data[pxIdx + 1] = 170;
 					imgData.data[pxIdx + 2] = 0;
-					imgData.data[pxIdx + 3] = Math.floor(255 * opts.alpha);
+					imgData.data[pxIdx + 3] = alphaByte;
 				}
 			}
 		}
@@ -288,8 +302,6 @@ window.SYNDebug.drawOverlay = function(key, scene, tilemap, options = {}) {
 	return img; // caller can destroy when done
 };
 
-// createInteractiveOverlay: draw the overlay and install keyboard controls
-// D: cycle indexOffset (0..tileCount) ; F: toggle swapAxis
 window.SYNDebug.createInteractiveOverlay = function(key, scene, tilemap, options = {}) {
 	const record = window.SYNParsed && window.SYNParsed[key];
 	if (!record) {
@@ -300,7 +312,7 @@ window.SYNDebug.createInteractiveOverlay = function(key, scene, tilemap, options
 		key,
 		scene,
 		tilemap,
-		opts: Object.assign({ indexOffset: 0, swapAxis: false, msbFirst: true, alpha: 0.85, invert: true, flipX: false, flipY: false }, options),
+		opts: Object.assign({ alpha: 0.85, invert: true }, options),
 		img: null
 	};
 
