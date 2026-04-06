@@ -1,6 +1,6 @@
 export const createSpeedometer = (scene, x, y) => {
 	const speedometer = scene.add.image(x, y, "TACHO.FSF", 0).setOrigin(0, 0).setDepth(100);
-	const speedDebugText = scene.add.text(10, y + 60, "0 km/h", { font: "12px Courier New", fill: "#fff" }).setDepth(100);
+	const speedDebugText = scene.add.bitmapText(10, y + 60, "systemFont", "0 km/h").setDepth(100);
 
 	scene.events.on("update", () => {
 		const raceScene = scene.scene.get("race");

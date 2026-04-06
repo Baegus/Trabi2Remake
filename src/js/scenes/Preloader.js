@@ -163,17 +163,30 @@ export default class Preloader extends Phaser.Scene {
 
 		// Cheeky addition to the credits menu page:
 		this.load.image("remakeCredits","img/remakeCredits.png");
+
+		// System font for player names and messages:
+		this.load.image("systemFont", "img/systemFont.png");
+		
 	}
 
 	create() {
 		const endTime = performance.now();
 		console.log(`All files loaded in ${(endTime - this.loadingStartTime).toFixed(2)} ms`);
 		this.registry.set("currentMap",0); // DEBUG
+		this.registry.set("currentMap",3); // DEBUG
 		this.registry.set("totalTeams",6);
 		this.registry.set("totalTires",3)
 		this.registry.set("totalMaps",10);
 		 // For whatever reason, tracks are out of order:
 		this.registry.set("mapOrder",[7,8,1,5,6,9,4,3,10,2]);
+		const systemFontConfig = {
+			image: "systemFont",
+			width: 8,
+			height: 8,
+			charsPerRow: 65,
+			chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -_",
+		};
+		this.cache.bitmapFont.add("systemFont", Phaser.GameObjects.RetroFont.Parse(this, systemFontConfig));
 
 		// this.scene.start("mainMenu"); // DEBUG MAIN MENU
 		// this.scene.start("singlePlayer"); // DEBUG SINGLEPLAYER MENU
