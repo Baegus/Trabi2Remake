@@ -234,7 +234,7 @@ window.SYNDebug.drawOverlay = function(key, scene, tilemap, options = {}) {
 			const alphaByte = Math.floor(255 * opts.alpha);
 
 			// If tileId is 0, mask the whole tile (fill entire tile rectangle)
-			if ([0, 31, 44, 54, 57].includes(tileId)) {
+			if ([0, 2, 31, 44, 54, 57].includes(tileId) || (tileId >= 87 && tileId <= 98) || tileId >= 115) {
 				for (let y = 0; y < TILE_H; y++) {
 					for (let x = 0; x < TILE_W; x++) {
 						const globalX = destX + x;
