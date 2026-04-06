@@ -39,7 +39,42 @@ export default class CarSettingsMenu extends Phaser.Scene {
 		let tires = defaultTires;
 		let transmission = defaultTransmissionValue;
 		let brakes = defaultBrakesValue;
-		
+
+
+		// Both Transmission and Brakes sliders have 22 steps (0-21)
+
+		function getTransmissionStats(t) {
+			// Ensure t is within bounds
+			t = Math.max(0, Math.min(21, Math.floor(t)));
+
+			// Top Speed Equation
+			// Using 2.6 maintains the 3-2-3-2-3-3 pattern perfectly.
+			const maxSpeed = 91 + Math.round(t * 2.6);
+
+			// 0-60 Acceleration (Step logic)
+			// These steps are non-linear (likely hand-tuned)
+			let zeroTo60;
+			if (t <= 2) zeroTo60 = 4;
+			else if (t <= 10) zeroTo60 = 5;
+			else if (t <= 15) zeroTo60 = 6;
+			else if (t <= 19) zeroTo60 = 7;
+			else zeroTo60 = 8;
+
+			// 0-120 Acceleration (Step logic)
+			let zeroTo120 = "---";
+			if (t >= 11) {
+				const z120Values = [18, 18, 19, 19, 20, 21, 21, 22, 23, 24, 25];
+				zeroTo120 = z120Values[t - 11] + "s";
+			}
+
+			return {
+				index: t,
+				maxSpeed: maxSpeed,
+				zeroTo60: zeroTo60 + "s",
+				zeroTo120: zeroTo120
+			};
+		}
+
 
 		// TIRES SELECTOR:
 
