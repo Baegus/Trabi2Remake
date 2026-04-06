@@ -14,11 +14,13 @@ export default class Preloader extends Phaser.Scene {
 		for (let i = 1; i <= mapCount; i++) {
 			const filename = `Trat${i.toString().padStart(2, "0")}.map`;
 			const filenameUpper = filename.toUpperCase();
+			// 3DM files (model placements):
 			const modelPlacementFilename = filenameUpper.replace(".MAP", ".3DM");
-			const il1Filename = filename.replace(".map", ".il1");
-			const il2Filename = filename.replace(".map", ".il2");
 			this.load.binary(filename, `trabi2data/${filename}`, Uint8Array);
 			this.load.binary(modelPlacementFilename, `trabi2data/${modelPlacementFilename}`, Uint8Array);
+			// IL1/IL2 files (AI node definitions):
+			const il1Filename = filename.replace(".map", ".il1");
+			const il2Filename = filename.replace(".map", ".il2");
 			this.load.binary(il1Filename, `trabi2data/${il1Filename}`, Uint8Array);
 			this.load.binary(il2Filename, `trabi2data/${il2Filename}`, Uint8Array);
 		}
@@ -125,6 +127,9 @@ export default class Preloader extends Phaser.Scene {
 		modelFiles.forEach((filename) => {
 			this.load.threeD(filename,`trabi2data/${filename}`);
 		});
+
+		// Load road curbs bitmask:
+		const roadMaskFile = this.load.syn("POZ.SYN", `trabi2data/POZ.SYN`);
 
 		// Load sounds and music from SNDs:
 		const soundFiles = [

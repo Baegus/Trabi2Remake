@@ -92,6 +92,8 @@ export default class Race extends Phaser.Scene {
 
 		}
 
+		this._synOverlay = window.SYNDebug.createInteractiveOverlay("POZ.SYN", this, this.tilemap);
+
 		const cursor = createCursor(this);
 
 		const cam = this.cameras.main;
