@@ -34,8 +34,8 @@ class ThreeDFile extends Phaser.Loader.FileTypes.BinaryFile {
 				{ name: "Top", indices: [4, 5, 7, 6], texId: faceTex[0], flipX: false },
 				{ name: "Front", indices: [0, 1, 5, 4], texId: faceTex[1], flipX: false },
 				{ name: "Right", indices: [1, 3, 7, 5], texId: faceTex[2] !== 0 ? faceTex[2] : faceTex[3], flipX: true },
-				{ name: "Left", indices: [2, 0, 4, 6], texId: faceTex[4] !== 0 ? faceTex[4] : faceTex[2], flipX: true },
-				{ name: "Back", indices: [3, 2, 6, 7], texId: faceTex[3] !== 0 ? faceTex[3] : faceTex[1], flipX: false },
+				{ name: "Left", indices: [2, 0, 4, 6], texId: faceTex[4] !== 0 ? faceTex[4] : faceTex[2], flipX: false },
+				{ name: "Back", indices: [3, 2, 6, 7], texId: faceTex[3] !== 0 ? faceTex[3] : faceTex[1], flipX: true },
 			];
 
 			faces.forEach((face) => {
