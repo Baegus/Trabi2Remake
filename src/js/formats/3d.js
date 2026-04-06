@@ -27,7 +27,7 @@ class ThreeDFile extends Phaser.Loader.FileTypes.BinaryFile {
 				view.getUint8(offset++),
 				view.getUint8(offset++),
 				view.getUint8(offset++),
-				view.getUint8(offset++) 
+				view.getUint8(offset++)
 			];
 
 			const faces = [
@@ -55,19 +55,56 @@ class ThreeDFile extends Phaser.Loader.FileTypes.BinaryFile {
 				const avgZ = (v0.z + v1.z + v2.z + v3.z) / 4;
 				const avgY = (v0.y + v1.y + v2.y + v3.y) / 4;
 
-				allTriangles.push({
-					texId: face.texId,
-					p0: v0, p1: v1, p2: v2,
-					u0x, u0y: 1, u1x, u1y: 1, u2x, u2y: 0,
-					avgZ, avgY
-				});
+				// Subdivide walls to fix affine texture mapping distortion (classic PS1 wobble / crease effect).
+				// Top faces don't suffer from this because they are parallel to the projection plane.
+				const slices = face.name === "Top" ? 1 : 6;
 
-				allTriangles.push({
-					texId: face.texId,
-					p0: v0, p1: v2, p2: v3,
-					u0x, u0y: 1, u1x: u2x, u1y: 0, u2x: u3x, u2y: 0,
-					avgZ, avgY
-				});
+				for (let s = 0; s < slices; s++) {
+					const t0 = s / slices;
+					const t1 = (s + 1) / slices;
+
+					// Interpolate vertex positions
+					const p0 = {
+						x: v0.x + (v1.x - v0.x) * t0,
+						y: v0.y + (v1.y - v0.y) * t0,
+						z: v0.z + (v1.z - v0.z) * t0
+					};
+					const p1 = {
+						x: v0.x + (v1.x - v0.x) * t1,
+						y: v0.y + (v1.y - v0.y) * t1,
+						z: v0.z + (v1.z - v0.z) * t1
+					};
+					const p2 = {
+						x: v3.x + (v2.x - v3.x) * t1,
+						y: v3.y + (v2.y - v3.y) * t1,
+						z: v3.z + (v2.z - v3.z) * t1
+					};
+					const p3 = {
+						x: v3.x + (v2.x - v3.x) * t0,
+						y: v3.y + (v2.y - v3.y) * t0,
+						z: v3.z + (v2.z - v3.z) * t0
+					};
+
+					// Interpolate horizontal UV mapping bounds
+					const su0x = u0x + (u1x - u0x) * t0;
+					const su1x = u0x + (u1x - u0x) * t1;
+					const su2x = u3x + (u2x - u3x) * t1;
+					const su3x = u3x + (u2x - u3x) * t0;
+
+					allTriangles.push({
+						texId: face.texId,
+						p0: p0, p1: p1, p2: p2,
+						u0x: su0x, u0y: 1, u1x: su1x, u1y: 1, u2x: su2x, u2y: 0,
+						avgZ, avgY
+					});
+
+					allTriangles.push({
+						texId: face.texId,
+						p0: p0, p1: p2, p2: p3,
+						u0x: su0x, u0y: 1, u1x: su2x, u1y: 0, u2x: su3x, u2y: 0,
+						avgZ, avgY
+					});
+				}
 			});
 		}
 
@@ -165,8 +202,6 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 				
 				const distDx = (wallContainer.x + centerX) - camera.midPoint.x;
 				const distDy = (wallContainer.y + centerY) - camera.midPoint.y;
-				
-				let depthVal = wallContainer.y + distDy; // Base sorting on Y + relative camera offset
 				
 				wallContainer.depth = 2000 + (100000 - Math.sqrt(distDx * distDx + distDy * distDy)) * 0.01 + (wallContainer.y * 0.001);
 
