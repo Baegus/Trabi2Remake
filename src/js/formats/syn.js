@@ -296,15 +296,12 @@ window.SYNDebug.createInteractiveOverlay = function(key, scene, tilemap, options
 		console.warn('SYN overlay: no parsed record for', key);
 		return null;
 	}
-
 	const state = {
 		key,
 		scene,
 		tilemap,
 		opts: Object.assign({ indexOffset: 0, swapAxis: false, msbFirst: true, alpha: 0.85, invert: true, flipX: false, flipY: false }, options),
-		img: null,
-		infoText: null,
-		handlers: []
+		img: null
 	};
 
 	function draw() {
@@ -312,57 +309,13 @@ window.SYNDebug.createInteractiveOverlay = function(key, scene, tilemap, options
 			state.img.destroy();
 		}
 		state.img = window.SYNDebug.drawOverlay(state.key, state.scene, state.tilemap, state.opts);
-		// update info HUD
-		const info = `SYN: ${state.key} | SYN Offset: ${state.opts.indexOffset} [A/D] | swapAxis: ${state.opts.swapAxis} [F] | flipX: ${state.opts.flipX} [X] | flipY: ${state.opts.flipY} [Y]`;
-		if (!state.infoText) {
-			state.infoText = state.scene.add.text(8, 8, info, { font: '14px monospace', fill: '#ffaa00', backgroundColor: 'rgba(0,0,0,0.5)' }).setDepth(10000).setScrollFactor(0);
-		} else {
-			state.infoText.setText(info);
-		}
 	}
 
-	// handlers
-	const onD = function() {
-		state.opts.indexOffset = (state.opts.indexOffset + 1) % record.tileCount;
-		draw();
-	};
-	const onA = function() {
-		state.opts.indexOffset = (state.opts.indexOffset - 1 + record.tileCount) % record.tileCount;
-		draw();
-	};
-	const onF = function() {
-		state.opts.swapAxis = !state.opts.swapAxis;
-		draw();
-	};
-	const onX = function() {
-		state.opts.flipX = !state.opts.flipX;
-		draw();
-	};
-	const onY = function() {
-		state.opts.flipY = !state.opts.flipY;
-		draw();
-	};
-
-	// register keyboard events on the scene
-	state.scene.input.keyboard.on('keydown-D', onD);
-	state.scene.input.keyboard.on('keydown-A', onA);
-	state.scene.input.keyboard.on('keydown-F', onF);
-	state.scene.input.keyboard.on('keydown-X', onX);
-	state.scene.input.keyboard.on('keydown-Y', onY);
-	
-	state.handlers.push({ event: 'keydown-D', fn: onD });
-	state.handlers.push({ event: 'keydown-A', fn: onA });
-	state.handlers.push({ event: 'keydown-F', fn: onF });
-	state.handlers.push({ event: 'keydown-X', fn: onX });
-	state.handlers.push({ event: 'keydown-Y', fn: onY });
-
-	// cleanup on scene shutdown
+	// cleanup on scene shutdown/destroy: only remove the overlay image
 	const cleanup = () => {
 		try {
-			state.handlers.forEach(h => state.scene.input.keyboard.off(h.event, h.fn));
+			if (state.img && state.img.destroy) state.img.destroy();
 		} catch (e) {}
-		if (state.img && state.img.destroy) state.img.destroy();
-		if (state.infoText && state.infoText.destroy) state.infoText.destroy();
 	};
 
 	state.scene.events.on('shutdown', cleanup);
