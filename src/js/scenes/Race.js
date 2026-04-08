@@ -5,8 +5,8 @@ import { parse3DM } from "../modules/3dm";
 import { parseIL } from "../modules/il";
 import { parseSP1SP2 } from "../modules/sp1sp2";
 import { createCar } from "../modules/car";
-import { STATIC, b2Body_ApplyLinearImpulse, b2Body_GetLinearVelocity, b2Body_GetMass, b2Body_GetTransform, b2Body_GetWorldCenterOfMass, b2Vec2, pxm } from "phaser-box2d/dist/PhaserBox2D.js";
-import { assignB2BodyBox, assignB2BodyCircle, createB2World, updateB2worldStepAndCollisions, createB2WallBoundaries } from "../modules/box2dUtils.js";
+import { STATIC, b2Body_ApplyLinearImpulse, b2Body_GetLinearVelocity, b2Body_GetMass, b2Body_GetTransform, b2Body_GetWorldCenterOfMass, b2Body_SetTransform, b2Vec2, pxm } from "phaser-box2d/dist/PhaserBox2D.js";
+import { assignB2BodyBox, assignB2BodyCircle, createB2World, updateB2worldStepAndCollisions } from "../modules/box2dUtils.js";
 
 
 const debugging = process.env.DEBUG == "true";
@@ -63,6 +63,8 @@ export default class Race extends Phaser.Scene {
 		const scene = this;
 		scene.events.off();
 
+		createB2World(scene); // create Box2D world
+
 		const toPx = (tileUnits) => tileUnits * scene.tileSize;
 
 		const mapTextures = "POZ.FSF"; // TODO set according to map
@@ -87,8 +89,8 @@ export default class Race extends Phaser.Scene {
 		// scene.add.rectangle(toPx(21), toPx(28), scene.tileSize, scene.tileSize, 0xff0000).setOrigin(0, 0);
 
 		for (const model of scene.modelPlacements) {
-			scene.add.model3D(model.x, model.y, model.name, mapTextures3D);
-
+			const modelObject = scene.add.model3D(model.x, model.y, model.name, mapTextures3D);
+			// assignB2BodyBox(modelObject, {type: STATIC});
 		}
 
 		if (debugging) {
@@ -141,6 +143,25 @@ export default class Race extends Phaser.Scene {
 		});
 
 		scene.scene.launch("hud");
+
+		async function loadDebug() {
+			if (process.env.DEBUG !== "true") return;
+			const DEBUG = await import("../modules/debug.js");
+			DEBUG.initToggleBox2dDebug(scene, true); // set true to show debug graphics by default, toggle with B
+			scene.debugFPSText = scene.add.text(8, 18, "0 FPS", {
+				color: "white",
+				fontFamily: "Arial",
+				fontSize: 13,
+			}).setOrigin(0, 1).setDepth(99999).setAlpha(0);
+			scene.input.keyboard.on("keydown-F", (e) => {
+				scene.debugFPSText.setAlpha(scene.debugFPSText.alpha === 1 ? 0 : 1);
+			});
+		}
+		loadDebug();
 	}
-		
+
+	update(time, delta) {
+		const scene = this;
+		updateB2worldStepAndCollisions(scene, delta); // update Box2D world and check for collisions
+	}
 }

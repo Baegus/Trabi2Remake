@@ -207,7 +207,7 @@ export class PhaserDebugDraw
 }
 
 export const initToggleBox2dDebug = (scene, debugVisible = false) => {
-	const debugGraphics = scene.add.graphics().setVisible(false).setDepth(9999);
+	const debugGraphics = scene.add.graphics().setVisible(false).setDepth(99999999);
 	scene.debugGraphics = debugGraphics;
 	scene.worldDraw = new PhaserDebugDraw(debugGraphics, scene.game.scale.width, scene.game.scale.height, GetWorldScale());
 

@@ -153,6 +153,7 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 			}
 
 			const wallContainer = new Phaser.GameObjects.Container(this.scene, x, y);
+			wallContainer.name = modelKey;
 			this.displayList.add(wallContainer);
 
 			const fov = 45; // Phaser's default Mesh FOV
