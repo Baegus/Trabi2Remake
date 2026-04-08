@@ -1,3 +1,4 @@
+import Phaser from "phaser";
 import FGFPlugin from "./formats/fgf";
 import PKGPlugin from "./formats/pkg";
 import SNDPlugin from "./formats/snd";

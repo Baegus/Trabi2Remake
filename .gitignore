@@ -1,4 +1,5 @@
-public/trabi2data
+.parcel-cache
+node_modules
 *.map
-public/*.js
-public/*.css
+dist
+static/trabi2data
