@@ -1,6 +1,8 @@
 import { createDamageIndicator } from "../modules/damageIndicator.js";
 import { createSpeedometer } from "../modules/speedometer.js";
 
+const debugging = process.env.DEBUG == "true";
+
 export default class HUD extends Phaser.Scene {
 	constructor() {
 		super({

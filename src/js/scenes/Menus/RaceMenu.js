@@ -3,23 +3,14 @@ import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 
+const debugging = process.env.DEBUG == "true";
+
 export default class RaceMenu extends Phaser.Scene {
 	constructor () {
 		super({
 			key: "raceMenu",
 			maxLights: 30,
-			physics: {
-				arcade: {
-					// debug: true
-				},
-				matter: {
-					// debug: true,
-					// gravity: { y: 0.5 }
-				}
-			}
 		});
-		this.spr = {};
-
 	}
 
 	preload() {
@@ -27,11 +18,12 @@ export default class RaceMenu extends Phaser.Scene {
 	}
 
 	create() {
-		this.events.off();
+		const scene = this;
+		scene.events.off();
 
-		const currentRaceType = this.registry.get("currentRaceType");
-		const bg = this.add.image(0,0,"NEW.FGF").setOrigin(0,0);
-		const cursor = createCursor(this);
+		const currentRaceType = scene.registry.get("currentRaceType");
+		const bg = scene.add.image(0,0,"NEW.FGF").setOrigin(0,0);
+		const cursor = createCursor(scene);
 
 		const defaultPlayerName = "Novy hrac";
 		const defaultTeam = 0;
@@ -46,8 +38,8 @@ export default class RaceMenu extends Phaser.Scene {
 
 		// LEFT COLUMN:
 
-		const teamThumbnails = this.add.image(148,46,"TYMY.FSF").setOrigin(0,0);
-		const totalTeams = this.registry.get("totalTeams");
+		const teamThumbnails = scene.add.image(148,46,"TYMY.FSF").setOrigin(0,0);
+		const totalTeams = scene.registry.get("totalTeams");
 		const lastTeam = totalTeams-1;
 		const teamsLocked = false; // TODO: set according to current cirmustances
 		const setTeam = (offset=1,forceValue=false) => {
@@ -61,7 +53,7 @@ export default class RaceMenu extends Phaser.Scene {
 			teamThumbnails.setFrame(frame);
 		};
 		setTeam(team,true);
-		const prevTeamButton = createMenuButton(this,{
+		const prevTeamButton = createMenuButton(scene,{
 			x: 111,
 			y: 83,
 			texture: "SIPKA1.FSF",
@@ -69,7 +61,7 @@ export default class RaceMenu extends Phaser.Scene {
 				setTeam(-1);
 			}
 		});
-		const nextTeamButton = createMenuButton(this,{
+		const nextTeamButton = createMenuButton(scene,{
 			x: 321,
 			y: 84,
 			texture: "SIPKA2.FSF",
@@ -78,18 +70,18 @@ export default class RaceMenu extends Phaser.Scene {
 			}
 		});
 
-		const carSettingsButton = createMenuButton(this,{
+		const carSettingsButton = createMenuButton(scene,{
 			x: 63,
 			y: 184,
 			texture: "NASVOZ.FSF",
 			clickCallback: () => {
-				this.scene.start("carSettingsMenu");
+				scene.scene.start("carSettingsMenu");
 			}
 		});
 
 		// TODO player name input
 
-		const easyDiffButton = createMenuButton(this,{
+		const easyDiffButton = createMenuButton(scene,{
 			x: 118,
 			y: 304,
 			texture: "SW1.FSF",
@@ -97,7 +89,7 @@ export default class RaceMenu extends Phaser.Scene {
 				// easyDiffButton.setFrame(1);
 			}
 		});
-		const mediumDiffButton = createMenuButton(this,{
+		const mediumDiffButton = createMenuButton(scene,{
 			x: 191,
 			y: 303,
 			texture: "SW2.FSF",
@@ -105,7 +97,7 @@ export default class RaceMenu extends Phaser.Scene {
 				// mediumDiffButton.setFrame(1);
 			}
 		});
-		const hardDiffButton = createMenuButton(this,{
+		const hardDiffButton = createMenuButton(scene,{
 			x: 262,
 			y: 303,
 			texture: "SW3.FSF",
@@ -116,8 +108,8 @@ export default class RaceMenu extends Phaser.Scene {
 
 		// RIGHT COLUMN:
 
-		const mapThumbnails = this.add.image(404,91,"TRATE.FSF").setOrigin(0,0);
-		const totalMaps = this.registry.get("totalMaps");
+		const mapThumbnails = scene.add.image(404,91,"TRATE.FSF").setOrigin(0,0);
+		const totalMaps = scene.registry.get("totalMaps");
 		const lastMap = totalMaps-1;
 		const mapsLocked = false; // TODO: set according to current cirmustances
 		const setMap = (offset=1,forceValue=false) => {
@@ -127,13 +119,13 @@ export default class RaceMenu extends Phaser.Scene {
 			if (selectedMap > lastMap) return;
 			if (selectedMap < 0) return;
 			map = selectedMap;
-			this.registry.set("currentMap",map);
+			scene.registry.set("currentMap",map);
 			const frame = mapsLocked ? selectedMap+totalMaps : selectedMap;
 			mapThumbnails.setFrame(frame);
 		};
 		setMap(map,true);
 
-		const prevMapButton = createMenuButton(this,{
+		const prevMapButton = createMenuButton(scene,{
 			x: 371,
 			y: 123,
 			texture: "SIPKA3.FSF",
@@ -141,7 +133,7 @@ export default class RaceMenu extends Phaser.Scene {
 				setMap(-1);
 			}
 		});
-		const nextMapButton = createMenuButton(this,{
+		const nextMapButton = createMenuButton(scene,{
 			x: 571,
 			y: 126,
 			texture: "SIPKA4.FSF",
@@ -150,14 +142,14 @@ export default class RaceMenu extends Phaser.Scene {
 			}
 		});
 
-		const lessLapsButton = createMenuButton(this,{
+		const lessLapsButton = createMenuButton(scene,{
 			x: 532,
 			y: 221,
 			texture: "HVEZDA1.FSF",
 			clickCallback: () => {
 			}
 		});
-		const moreLapsButton = createMenuButton(this,{
+		const moreLapsButton = createMenuButton(scene,{
 			x: 570,
 			y: 221,
 			texture: "HVEZDA2.FSF",
@@ -166,14 +158,14 @@ export default class RaceMenu extends Phaser.Scene {
 		});
 		// TODO: Display and set text values
 
-		const lessOpponentsButton = createMenuButton(this,{
+		const lessOpponentsButton = createMenuButton(scene,{
 			x: 532,
 			y: 250,
 			texture: "HVEZDA3.FSF",
 			clickCallback: () => {
 			}
 		});
-		const moreOpponentsButton = createMenuButton(this,{
+		const moreOpponentsButton = createMenuButton(scene,{
 			x: 570,
 			y: 250,
 			texture: "HVEZDA4.FSF",
@@ -183,7 +175,7 @@ export default class RaceMenu extends Phaser.Scene {
 		// TODO: Display and set text values
 		
 
-		const saveButton = createMenuButton(this,{
+		const saveButton = createMenuButton(scene,{
 			x: 407,
 			y: 299,
 			texture: "SAVE.FSF",
@@ -194,16 +186,16 @@ export default class RaceMenu extends Phaser.Scene {
 
 		// BOTTOM ROW:
 
-		const backButton = createMenuButton(this,{
+		const backButton = createMenuButton(scene,{
 			x: 53,
 			y: 369,
 			texture: "BACK2.FSF",
 			clickCallback: () => {
-				this.scene.start("singlePlayerMenu");
+				scene.scene.start("singlePlayerMenu");
 			}
 		});
 
-		const standingsButton = createMenuButton(this,{
+		const standingsButton = createMenuButton(scene,{
 			x: 202,
 			y: 396,
 			texture: "KLASIF.FSF",
@@ -211,12 +203,12 @@ export default class RaceMenu extends Phaser.Scene {
 			}
 		});
 
-		const startRaceButton = createMenuButton(this,{
+		const startRaceButton = createMenuButton(scene,{
 			x: 469,
 			y: 367,
 			texture: "GAME.FSF",
 			clickCallback: () => {
-				this.scene.start("race");
+				scene.scene.start("race");
 			}
 		});
 

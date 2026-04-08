@@ -3,23 +3,14 @@ import { playSound, playMusicTrack } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 
+const debugging = process.env.DEBUG == "true";
+
 export default class MainMenu extends Phaser.Scene {
 	constructor () {
 		super({
 			key: "mainMenu",
 			maxLights: 30,
-			physics: {
-				arcade: {
-					// debug: true
-				},
-				matter: {
-					// debug: true,
-					// gravity: { y: 0.5 }
-				}
-			}
 		});
-		this.spr = {};
-
 	}
 
 	preload() {
@@ -27,55 +18,55 @@ export default class MainMenu extends Phaser.Scene {
 	}
 
 	create() {
-		this.events.off();
-		const bg = this.add.image(0,0,"MAIN.FGF").setOrigin(0,0);
+		const scene = this;
+		scene.events.off();
+		const bg = scene.add.image(0,0,"MAIN.FGF").setOrigin(0,0);
 
-		
-		const cursor = createCursor(this);
+		const cursor = createCursor(scene);
 
-		const cursorTooltip = this.add.image(cursor.x,cursor.y,"POPISKY.FSF",0);
+		const cursorTooltip = scene.add.image(cursor.x,cursor.y,"POPISKY.FSF",0);
 		cursorTooltip.setAlpha(0).setDepth(cursor.depth);
 
-		this.input.on("pointermove",(p) => {
+		scene.input.on("pointermove",(p) => {
 			cursorTooltip.x = p.x+53;
 			cursorTooltip.y = p.y+12;
 		});
-		
-		const singlePlayerButton = createMenuButton(this,{
+
+		const singlePlayerButton = createMenuButton(scene,{
 			x: 259,
 			y: 154,
 			texture: "SINGLE.FSF",
 			tooltipObject: cursorTooltip,
 			tooltipFrame: 0,
 			clickCallback: () => {
-				this.scene.start("singlePlayerMenu");
+				scene.scene.start("singlePlayerMenu");
 			}
 		});
-		const multiPlayerButton = createMenuButton(this,{
+		const multiPlayerButton = createMenuButton(scene,{
 			x:371,
 			y:149,
 			texture: "MULTI.FSF",
 			tooltipObject: cursorTooltip,
 			tooltipFrame:1
 		});
-		const optionsButton = createMenuButton(this,{
+		const optionsButton = createMenuButton(scene,{
 			x:487,
 			y:147,
 			texture: "OPTIONS.FSF",
 			tooltipObject: cursorTooltip,
 			tooltipFrame:2
 		});
-		const creditsButton = createMenuButton(this,{
+		const creditsButton = createMenuButton(scene,{
 			x:302,
 			y:253,
 			texture: "CREDITS.FSF",
 			tooltipObject: cursorTooltip,
 			tooltipFrame:3,
 			clickCallback: () => {
-				this.scene.start("creditsMenu");
+				scene.scene.start("creditsMenu");
 			}
 		});
-		const exitButton = createMenuButton(this,{
+		const exitButton = createMenuButton(scene,{
 			x:420,
 			y:256,
 			texture: "EXIT.FSF",
@@ -86,9 +77,9 @@ export default class MainMenu extends Phaser.Scene {
 			}
 		});
 
-		if (this.registry.get("menuMusicPlaying") !== true) {
-			playMusicTrack(this,2);
-			this.registry.set("menuMusicPlaying", true);
+		if (scene.registry.get("menuMusicPlaying") !== true) {
+			playMusicTrack(scene,2);
+			scene.registry.set("menuMusicPlaying", true);
 		}
 	}
 		

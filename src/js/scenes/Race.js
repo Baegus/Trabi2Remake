@@ -5,20 +5,18 @@ import { parse3DM } from "../modules/3dm";
 import { parseIL } from "../modules/il";
 import { parseSP1SP2 } from "../modules/sp1sp2";
 import { createCar } from "../modules/car";
+import { STATIC, b2Body_ApplyLinearImpulse, b2Body_GetLinearVelocity, b2Body_GetMass, b2Body_GetTransform, b2Body_GetWorldCenterOfMass, b2Vec2, pxm } from "phaser-box2d/dist/PhaserBox2D.js";
+import { assignB2BodyBox, assignB2BodyCircle, createB2World, updateB2worldStepAndCollisions, createB2WallBoundaries } from "../modules/box2dUtils.js";
+
+
+const debugging = process.env.DEBUG == "true";
 
 export default class Race extends Phaser.Scene {
 	constructor () {
 		super({
 			key: "race",
 			maxLights: 30,
-			physics: {
-				arcade: {
-					debug: true
-				}
-			}
 		});
-		this.spr = {};
-
 	}
 
 	preload() {
@@ -90,31 +88,33 @@ export default class Race extends Phaser.Scene {
 
 		for (const model of scene.modelPlacements) {
 			scene.add.model3D(model.x, model.y, model.name, mapTextures3D);
+
 		}
 
-		const aiNodesGraphics = scene.add.graphics().setAlpha(0.5);
-		if (scene.aiNodes1) {
-			aiNodesGraphics.lineStyle(2, 0x00ff00);
-			aiNodesGraphics.fillStyle(0x00ff00);
-			aiNodesGraphics.beginPath();
-			scene.aiNodes1.forEach(node => {
-				aiNodesGraphics.lineTo(node.x, node.y);
-				aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
-			});
-			aiNodesGraphics.closePath();
-			aiNodesGraphics.strokePath();
-		}
-		if (scene.aiNodes2) {
-			aiNodesGraphics.lineStyle(2, 0x0000ff);
-			aiNodesGraphics.fillStyle(0x0000ff);
-			aiNodesGraphics.beginPath();
-			scene.aiNodes2.forEach(node => {
-				aiNodesGraphics.lineTo(node.x, node.y);
-				aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
-			});
-			aiNodesGraphics.closePath();
-			aiNodesGraphics.strokePath();
-
+		if (debugging) {
+			const aiNodesGraphics = scene.add.graphics().setAlpha(0.5);
+			if (scene.aiNodes1) {
+				aiNodesGraphics.lineStyle(2, 0x00ff00);
+				aiNodesGraphics.fillStyle(0x00ff00);
+				aiNodesGraphics.beginPath();
+				scene.aiNodes1.forEach(node => {
+					aiNodesGraphics.lineTo(node.x, node.y);
+					aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
+				});
+				aiNodesGraphics.closePath();
+				aiNodesGraphics.strokePath();
+			}
+			if (scene.aiNodes2) {
+				aiNodesGraphics.lineStyle(2, 0x0000ff);
+				aiNodesGraphics.fillStyle(0x0000ff);
+				aiNodesGraphics.beginPath();
+				scene.aiNodes2.forEach(node => {
+					aiNodesGraphics.lineTo(node.x, node.y);
+					aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
+				});
+				aiNodesGraphics.closePath();
+				aiNodesGraphics.strokePath();
+			}
 		}
 
 		// scene._synOverlay = window.SYNDebug.createInteractiveOverlay("POZ.SYN", scene, scene.tilemap);

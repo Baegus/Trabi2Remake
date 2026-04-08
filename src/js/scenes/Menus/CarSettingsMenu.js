@@ -3,23 +3,14 @@ import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 
+const debugging = process.env.DEBUG == "true";
+
 export default class CarSettingsMenu extends Phaser.Scene {
 	constructor () {
 		super({
 			key: "carSettingsMenu",
 			maxLights: 30,
-			physics: {
-				arcade: {
-					// debug: true
-				},
-				matter: {
-					// debug: true,
-					// gravity: { y: 0.5 }
-				}
-			}
 		});
-		this.spr = {};
-
 	}
 
 	preload() {
@@ -27,9 +18,10 @@ export default class CarSettingsMenu extends Phaser.Scene {
 	}
 
 	create() {
-		this.events.off();
-		const bg = this.add.image(0,0,"CAROPT.FGF").setOrigin(0,0);
-		const cursor = createCursor(this);
+		const scene = this;
+		scene.events.off();
+		const bg = scene.add.image(0,0,"CAROPT.FGF").setOrigin(0,0);
+		const cursor = createCursor(scene);
 
 		const defaultTires = 1;
 		const defaultTransmissionValue = 12;
@@ -78,8 +70,8 @@ export default class CarSettingsMenu extends Phaser.Scene {
 
 		// TIRES SELECTOR:
 
-		const tireThumbnails = this.add.image(366,355,"PNEU.FSF").setOrigin(0,0);
-		const totalTires = this.registry.get("totalTires");
+		const tireThumbnails = scene.add.image(366,355,"PNEU.FSF").setOrigin(0,0);
+		const totalTires = scene.registry.get("totalTires");
 		const lastTires = totalTires-1;
 		const setTires = (offset=1,forceValue=false) => {
 			let selectedTires = tires+offset;
@@ -87,12 +79,12 @@ export default class CarSettingsMenu extends Phaser.Scene {
 			if (selectedTires > lastTires) return;
 			if (selectedTires < 0) return;
 			tires = selectedTires;
-			this.registry.set("currentTires",tires);
+			scene.registry.set("currentTires",tires);
 			tireThumbnails.setFrame(selectedTires);
 		};
 		setTires(tires,true);
 
-		const prevTiresButton = createMenuButton(this,{
+		const prevTiresButton = createMenuButton(scene,{
 			x: 332,
 			y: 362,
 			texture: "SIPKA5.FSF",
@@ -100,7 +92,7 @@ export default class CarSettingsMenu extends Phaser.Scene {
 				setTires(-1);
 			}
 		});
-		const nextTiresButton = createMenuButton(this,{
+		const nextTiresButton = createMenuButton(scene,{
 			x: 420,
 			y: 364,
 			texture: "SIPKA6.FSF",
@@ -111,12 +103,12 @@ export default class CarSettingsMenu extends Phaser.Scene {
 
 
 
-		const okButton = createMenuButton(this,{
+		const okButton = createMenuButton(scene,{
 			x: 468,
 			y: 363,
 			texture: "OK.FSF",
 			clickCallback: () => {
-				this.scene.start("raceMenu");
+				scene.scene.start("raceMenu");
 			}
 		});
 

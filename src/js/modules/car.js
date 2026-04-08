@@ -46,6 +46,7 @@ export const createCar = (scene, x, y, team=0) => {
 	car.setRotation(Phaser.Math.DegToRad(-90)).setDepth(10);
 
 	// Controls & physics params
+	/*
 	car.turnSpeed = Phaser.Math.DegToRad(90); // radians per second
 	car.acceleration = 300; // pixels per second^2
 	car.maxSpeed = 800; // pixels per second
@@ -98,6 +99,7 @@ export const createCar = (scene, x, y, team=0) => {
 		car.body.velocity.x *= car.drag;
 		car.body.velocity.y *= car.drag;
 	});
+	*/
 
 	scene.cameras.main.startFollow(car, true, 0.1, 0.1);
 

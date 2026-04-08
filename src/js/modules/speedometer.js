@@ -15,12 +15,14 @@ export const createSpeedometer = (scene, x, y) => {
 		if (!raceScene || !raceScene.playerCar) return;
 		const playerCar = raceScene.playerCar;
 		const SPEED_SCALE = 0.05; // adjust (e.g. 0.5 = half speed)
+		/*
 		const speedKPH = Math.round(Math.sqrt(playerCar.body.velocity.x ** 2 + playerCar.body.velocity.y ** 2) * 3.6 * SPEED_SCALE);
 		// speedDebugText.setText(`${speedKPH} km/h`);
 
 		// Map speed to needle angle (tune the divisor and offset to match the speedometer design)
 		const needleAngle = Phaser.Math.Clamp(speedKPH / maxSpeedKPH * angleRange + angleOffset, -128, 128);
 		needle.setRotation(Phaser.Math.DegToRad(needleAngle));
+		*/
 	});
 
 	return speedometer;

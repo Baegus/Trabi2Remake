@@ -1,3 +1,5 @@
+const debugging = process.env.DEBUG == "true";
+
 export default class Preloader extends Phaser.Scene {
 	constructor() {
 		super({
@@ -7,7 +9,8 @@ export default class Preloader extends Phaser.Scene {
 	}
 
 	preload() {
-		this.loadingStartTime = performance.now();
+		const scene = this;
+		scene.loadingStartTime = performance.now();
 
 		// Load maps:
 		const mapCount = 10;
@@ -16,18 +19,18 @@ export default class Preloader extends Phaser.Scene {
 			const filenameUpper = filename.toUpperCase();
 			// 3DM files (model placements):
 			const modelPlacementFilename = filenameUpper.replace(".MAP", ".3DM");
-			this.load.binary(filename, `trabi2data/${filename}`, Uint8Array);
-			this.load.binary(modelPlacementFilename, `trabi2data/${modelPlacementFilename}`, Uint8Array);
+			scene.load.binary(filename, `trabi2data/${filename}`, Uint8Array);
+			scene.load.binary(modelPlacementFilename, `trabi2data/${modelPlacementFilename}`, Uint8Array);
 			// IL1/IL2 files (AI node definitions):
 			const il1Filename = filename.replace(".map", ".il1");
 			const il2Filename = filename.replace(".map", ".il2");
-			this.load.binary(il1Filename, `trabi2data/${il1Filename}`, Uint8Array);
-			this.load.binary(il2Filename, `trabi2data/${il2Filename}`, Uint8Array);
+			scene.load.binary(il1Filename, `trabi2data/${il1Filename}`, Uint8Array);
+			scene.load.binary(il2Filename, `trabi2data/${il2Filename}`, Uint8Array);
 			// SP1/SP2 files (additional sprite positions, from ONIKY.FSF and DIVACI.FSF):
 			const sp1Filename = filename.replace(".map", ".sp1");
 			const sp2Filename = filename.replace(".map", ".sp2");
-			this.load.binary(sp1Filename, `trabi2data/${sp1Filename}`, Uint8Array);
-			this.load.binary(sp2Filename, `trabi2data/${sp2Filename}`, Uint8Array);
+			scene.load.binary(sp1Filename, `trabi2data/${sp1Filename}`, Uint8Array);
+			scene.load.binary(sp2Filename, `trabi2data/${sp2Filename}`, Uint8Array);
 		}
 
 		// Load FGFs and FSFs:
@@ -115,7 +118,7 @@ export default class Preloader extends Phaser.Scene {
 
 		];
 		originalGraphicsFiles.forEach((filename) => {
-			this.load.fsf(filename,`trabi2data/${filename}`);
+			scene.load.fsf(filename,`trabi2data/${filename}`);
 		});
 
 		// Load texture PKGs:
@@ -124,7 +127,7 @@ export default class Preloader extends Phaser.Scene {
 			"TEXTURY2.PKG", // winter textures
 		];
 		texturePackages.forEach((filename) => {
-			this.load.pkg(filename,`trabi2data/${filename}`);
+			scene.load.pkg(filename,`trabi2data/${filename}`);
 		});
 
 		// Load 3D models:
@@ -144,11 +147,11 @@ export default class Preloader extends Phaser.Scene {
 			"VEZ.3D",
 		];
 		modelFiles.forEach((filename) => {
-			this.load.threeD(filename,`trabi2data/${filename}`);
+			scene.load.threeD(filename,`trabi2data/${filename}`);
 		});
 
 		// Load road curbs bitmask:
-		const roadMaskFile = this.load.syn("POZ.SYN", `trabi2data/POZ.SYN`);
+		const roadMaskFile = scene.load.syn("POZ.SYN", `trabi2data/POZ.SYN`);
 
 		// Load sounds and music from SNDs:
 		const soundFiles = [
@@ -158,27 +161,28 @@ export default class Preloader extends Phaser.Scene {
 			// "TRABANT.SND", // engine sounds
 		];
 		soundFiles.forEach((filename) => {
-			this.load.snd(filename,`trabi2data/${filename}`);
+			scene.load.snd(filename,`trabi2data/${filename}`);
 		});
 
 
 		// Cheeky addition to the credits menu page:
-		this.load.image("remakeCredits","img/remakeCredits.png");
+		scene.load.image("remakeCredits","img/remakeCredits.png");
 
 		// System font for player names and messages:
-		this.load.image("systemFont", "img/systemFont.png");
+		scene.load.image("systemFont", "img/systemFont.png");
 		
 	}
 
 	async create() {
+		const scene = this;
 		const endTime = performance.now();
-		console.log(`All files loaded in ${(endTime - this.loadingStartTime).toFixed(2)} ms`);
-		this.registry.set("currentMap",3); // DEBUG
-		this.registry.set("totalTeams",6);
-		this.registry.set("totalTires",3)
-		this.registry.set("totalMaps",10);
+		console.log(`All files loaded in ${(endTime - scene.loadingStartTime).toFixed(2)} ms`);
+		scene.registry.set("currentMap",3); // DEBUG
+		scene.registry.set("totalTeams",6);
+		scene.registry.set("totalTires",3)
+		scene.registry.set("totalMaps",10);
 		 // For whatever reason, tracks are out of order:
-		this.registry.set("mapOrder",[7,8,1,5,6,9,4,3,10,2]);
+		scene.registry.set("mapOrder",[7,8,1,5,6,9,4,3,10,2]);
 		const numbers = "0123456789";
 		const systemFontConfig = {
 			image: "systemFont",
@@ -187,7 +191,7 @@ export default class Preloader extends Phaser.Scene {
 			charsPerRow: 67,
 			chars: `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz${numbers} -_:.`,
 		};
-		this.cache.bitmapFont.add("systemFont", Phaser.GameObjects.RetroFont.Parse(this, systemFontConfig));
+		scene.cache.bitmapFont.add("systemFont", Phaser.GameObjects.RetroFont.Parse(scene, systemFontConfig));
 		// Create two HUD bitmap fonts (red and gray) from a single image that has
 		// one character per row: red characters first, then gray ones.
 		const charsRed = `${numbers}:.`;
@@ -197,7 +201,7 @@ export default class Preloader extends Phaser.Scene {
 		const redCount = charsRed.length;
 		const grayCount = charsGray.length;
 
-		const srcTexture = this.textures.get("FONT.FSF");
+		const srcTexture = scene.textures.get("FONT.FSF");
 		const srcImage = srcTexture.getSourceImage();
 
 		// Helper to create a texture from a slice of the source image
@@ -210,7 +214,7 @@ export default class Preloader extends Phaser.Scene {
 			ctx.drawImage(srcImage, 0, srcY, charW, charH * count, 0, 0, charW, charH * count);
 			// add the canvas as a texture key and parse as RetroFont
 			const textureKey = `fontSlice_${key}`;
-			this.textures.addImage(textureKey, canvas);
+			scene.textures.addImage(textureKey, canvas);
 			const cfg = {
 				image: textureKey,
 				width: charW,
@@ -218,15 +222,15 @@ export default class Preloader extends Phaser.Scene {
 				charsPerRow: 1,
 				chars: chars
 			};
-			this.cache.bitmapFont.add(key, Phaser.GameObjects.RetroFont.Parse(this, cfg));
+			scene.cache.bitmapFont.add(key, Phaser.GameObjects.RetroFont.Parse(scene, cfg));
 		};
 
 		makeFontFromSlice("HUDFontRed", 0, redCount, charsRed);
 		makeFontFromSlice("HUDFontGray", charH * redCount, grayCount, charsGray);
 
-		// this.scene.start("mainMenu"); // DEBUG MAIN MENU
-		// this.scene.start("singlePlayer"); // DEBUG SINGLEPLAYER MENU
-		// this.scene.start("raceMenu"); // DEBUG RACE MENU
-		this.scene.start("race"); // DEBUG RACE
+		// scene.scene.start("mainMenu"); // DEBUG MAIN MENU
+		// scene.scene.start("singlePlayer"); // DEBUG SINGLEPLAYER MENU
+		// scene.scene.start("raceMenu"); // DEBUG RACE MENU
+		scene.scene.start("race"); // DEBUG RACE
 	}
 }
