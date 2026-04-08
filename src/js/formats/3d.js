@@ -164,53 +164,75 @@ export default class ThreeDPlugin extends Phaser.Plugins.BasePlugin {
 			const zScale = fov * 0.1;
 
 			let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-
 			for (const batch of meshData) {
-				const textureKey = `${texturePackage}-${batch.texId-1}`;
-				// scale raw positions (x,y,z) by zScale for z component
 				const raw = batch.positions;
-				const scaled = new Array(raw.length);
 				for (let i = 0; i < raw.length; i += 3) {
 					if (raw[i] < minX) minX = raw[i];
 					if (raw[i] > maxX) maxX = raw[i];
 					if (raw[i + 1] < minY) minY = raw[i + 1];
 					if (raw[i + 1] > maxY) maxY = raw[i + 1];
+				}
+			}
 
-					scaled[i] = raw[i];
-					scaled[i + 1] = raw[i + 1];
+			const width = maxX - minX;
+			const height = maxY - minY;
+
+			// Set the container size to match the footprint
+			wallContainer.setSize(width, height);
+
+			// 2. Create meshes with normalized vertices (0 to width, 0 to height)
+			for (const batch of meshData) {
+				const textureKey = `${texturePackage}-${batch.texId - 1}`;
+				const raw = batch.positions;
+				const scaled = new Array(raw.length);
+
+				for (let i = 0; i < raw.length; i += 3) {
+					// Subtract minX/minY to align vertices with the Container's 0,0 (Top-Left)
+					scaled[i] = raw[i] - minX;
+					scaled[i + 1] = raw[i + 1] - minY;
 					scaled[i + 2] = raw[i + 2] * zScale;
 				}
-				const uvs = batch.uvs;
 
 				const mesh = new Phaser.GameObjects.Mesh(this.scene, 0, 0, textureKey);
-				mesh.addVertices(scaled, uvs, undefined, true);
+				mesh.addVertices(scaled, batch.uvs, undefined, true);
 				mesh.panZ(perfectPanZ);
-				
+
 				wallContainer.add(mesh);
 				meshes.push(mesh);
 			}
 
-			const centerX = minX === Infinity ? 0 : (minX + maxX) / 2;
-			const centerY = minY === Infinity ? 0 : (minY + maxY) / 2;
+
+			// Offset for perspective calculation (center of the footprint)
+			const centerX = width / 2;
+			const centerY = height / 2;
+
+
+			wallContainer.x += centerX;
+			wallContainer.y -= centerY;
 
 			const updatePerspective = () => {
 				if (!wallContainer.scene) return;
 
 				const camera = wallContainer.scene.cameras.main;
 
+				// The world position of the container's center
+				const worldCenterX = wallContainer.x + (centerX * wallContainer.scaleX);
+				const worldCenterY = wallContainer.y + (centerY * wallContainer.scaleY);
+
 				const dx = wallContainer.x - camera.midPoint.x;
 				const dy = wallContainer.y - camera.midPoint.y;
-				
-				const distDx = (wallContainer.x + centerX) - camera.midPoint.x;
-				const distDy = (wallContainer.y + centerY) - camera.midPoint.y;
-				
+
+				const distDx = worldCenterX - camera.midPoint.x;
+				const distDy = worldCenterY - camera.midPoint.y;
+
+				// Depth sorting
 				wallContainer.depth = 2000 + (100000 - Math.sqrt(distDx * distDx + distDy * distDy)) * 0.01 + (wallContainer.y * 0.001);
 
 				for (const mesh of meshes) {
-					mesh.x = -dx;
-					mesh.y = -dy;
-					mesh.modelPosition.x = dx;
-					mesh.modelPosition.y = -dy;
+					mesh.x = -dx
+					mesh.y = -dy
+					mesh.modelPosition.x = dx - centerX;
+					mesh.modelPosition.y = -dy - centerY;
 				}
 			};
 

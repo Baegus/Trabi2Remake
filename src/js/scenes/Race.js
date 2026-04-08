@@ -90,7 +90,7 @@ export default class Race extends Phaser.Scene {
 
 		for (const model of scene.modelPlacements) {
 			const modelObject = scene.add.model3D(model.x, model.y, model.name, mapTextures3D);
-			// assignB2BodyBox(modelObject, {type: STATIC});
+			assignB2BodyBox(modelObject, {type: STATIC});
 		}
 
 		if (debugging) {
