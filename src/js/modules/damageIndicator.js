@@ -6,7 +6,7 @@ export const createDamageIndicator = (scene, x, y) => {
 	const TOP_H = 67; // top quarter height
 	const BOTTOM_H = 66; // bottom quarter height
 
-	const damageIndicatorContainer = scene.add.container(560, 348).setDepth(100);
+	const damageIndicatorContainer = scene.add.container(x, y).setDepth(100);
 
 	// Use small RenderTextures for each quarter and blit the appropriate
 	// frame into them. This avoids issues with cropping frames in atlases.

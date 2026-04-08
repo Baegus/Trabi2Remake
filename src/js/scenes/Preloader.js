@@ -183,8 +183,8 @@ export default class Preloader extends Phaser.Scene {
 			image: "systemFont",
 			width: 8,
 			height: 8,
-			charsPerRow: 65,
-			chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -_",
+			charsPerRow: 67,
+			chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -_:.",
 		};
 		this.cache.bitmapFont.add("systemFont", Phaser.GameObjects.RetroFont.Parse(this, systemFontConfig));
 

@@ -29,11 +29,18 @@ export const createCar = (scene, x, y, team=0) => {
 	});
 	car.team = team;
 	car.damage = [0, 0, 0, 0]; // topLeft, topRight, bottomLeft, bottomRight
+	const dmgToFrame = (n) => {
+		const clamped = Math.max(0, Math.min(100, n));
+		return Math.min(3, Math.floor(clamped / 25));
+	};
 	car.updateDamage = function() {
-		this.topLeft.setFrame(this.team * 4 + this.damage[0]);
-		this.topRight.setFrame(this.team * 4 + this.damage[1]);
-		this.bottomLeft.setFrame(this.team * 4 + this.damage[2]);
-		this.bottomRight.setFrame(this.team * 4 + this.damage[3]);
+		// damage values are percentages (0-100). Map them to 4 frames (0..3)
+		
+
+		this.topLeft.setFrame(this.team * 4 + dmgToFrame(this.damage[0]));
+		this.topRight.setFrame(this.team * 4 + dmgToFrame(this.damage[1]));
+		this.bottomLeft.setFrame(this.team * 4 + dmgToFrame(this.damage[2]));
+		this.bottomRight.setFrame(this.team * 4 + dmgToFrame(this.damage[3]));
 	};
 	car.updateDamage();
 	car.setRotation(Phaser.Math.DegToRad(-90)).setDepth(10);

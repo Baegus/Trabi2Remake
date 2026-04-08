@@ -10,7 +10,9 @@ export default class HUD extends Phaser.Scene {
 
 	create() {
 		const scene = this;
-		const damageIndicator = createDamageIndicator(scene, 560, 348);
+		const damageIndicator = createDamageIndicator(scene, 560, 347);
 		const speedometer = createSpeedometer(scene, 0, 341);
+
+		const trainingText = scene.add.bitmapText(200, 460, "systemFont", "Trenink muzete kdykoliv ukoncit klavesou ESC.").setOrigin(0, 0).setDepth(100);
 	}
 }
