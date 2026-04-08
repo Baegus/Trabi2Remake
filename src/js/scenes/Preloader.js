@@ -108,6 +108,7 @@ export default class Preloader extends Phaser.Scene {
 			"TRABANT.FSF", // all Trabant sprites
 
 			// HUD:
+			"FONT.FSF",   // number font (red + gray)
 			"TACHO.FSF", // speedometer
 			"OBRYSY.FSF", // car damage indicators
 
@@ -169,24 +170,59 @@ export default class Preloader extends Phaser.Scene {
 		
 	}
 
-	create() {
+	async create() {
 		const endTime = performance.now();
 		console.log(`All files loaded in ${(endTime - this.loadingStartTime).toFixed(2)} ms`);
-		this.registry.set("currentMap",0); // DEBUG
 		this.registry.set("currentMap",3); // DEBUG
 		this.registry.set("totalTeams",6);
 		this.registry.set("totalTires",3)
 		this.registry.set("totalMaps",10);
 		 // For whatever reason, tracks are out of order:
 		this.registry.set("mapOrder",[7,8,1,5,6,9,4,3,10,2]);
+		const numbers = "0123456789";
 		const systemFontConfig = {
 			image: "systemFont",
 			width: 8,
 			height: 8,
 			charsPerRow: 67,
-			chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -_:.",
+			chars: `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz${numbers} -_:.`,
 		};
 		this.cache.bitmapFont.add("systemFont", Phaser.GameObjects.RetroFont.Parse(this, systemFontConfig));
+		// Create two HUD bitmap fonts (red and gray) from a single image that has
+		// one character per row: red characters first, then gray ones.
+		const charsRed = `${numbers}:.`;
+		const charsGray = `${numbers}/`;
+		const charW = 9;
+		const charH = 16;
+		const redCount = charsRed.length;
+		const grayCount = charsGray.length;
+
+		const srcTexture = this.textures.get("FONT.FSF");
+		const srcImage = srcTexture.getSourceImage();
+
+		// Helper to create a texture from a slice of the source image
+		const makeFontFromSlice = async (key, srcY, count, chars) => {
+			const canvas = document.createElement("canvas");
+			canvas.width = charW;
+			canvas.height = charH * count;
+			const ctx = canvas.getContext("2d");
+			// sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
+			ctx.drawImage(srcImage, 0, srcY, charW, charH * count, 0, 0, charW, charH * count);
+			// add the canvas as a texture key and parse as RetroFont
+			const textureKey = `fontSlice_${key}`;
+			this.textures.addImage(textureKey, canvas);
+			const cfg = {
+				image: textureKey,
+				width: charW,
+				height: charH,
+				charsPerRow: 1,
+				chars: chars
+			};
+			this.cache.bitmapFont.add(key, Phaser.GameObjects.RetroFont.Parse(this, cfg));
+		};
+
+		makeFontFromSlice("HUDFontRed", 0, redCount, charsRed);
+		makeFontFromSlice("HUDFontGray", charH * redCount, grayCount, charsGray);
 
 		// this.scene.start("mainMenu"); // DEBUG MAIN MENU
 		// this.scene.start("singlePlayer"); // DEBUG SINGLEPLAYER MENU
