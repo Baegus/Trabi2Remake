@@ -83,7 +83,7 @@ export default class Race extends Phaser.Scene {
 		}
 
 		scene.cars = [];
-		scene.playerCar = createCar(scene, toPx(23), toPx(32), 0);
+		scene.playerCar = createCar(scene, toPx(23), toPx(32), 0, true);
 		scene.cars.push(scene.playerCar);
 
 		// scene.add.rectangle(toPx(21), toPx(28), scene.tileSize, scene.tileSize, 0xff0000).setOrigin(0, 0);

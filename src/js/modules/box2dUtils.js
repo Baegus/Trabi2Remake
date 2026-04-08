@@ -7,7 +7,7 @@ import { b2Body_GetUserData, RemoveSpriteFromWorld, b2Body_IsValid, b2Shape_GetB
  */
 export function createB2World(scene, options) {
 	const defaultOptions = {
-		gravity: { x: 0, y: -30 },
+		gravity: { x: 0, y: 0 },
 		...options
 	};
 	const worldDef = b2DefaultWorldDef();
