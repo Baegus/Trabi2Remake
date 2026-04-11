@@ -8,7 +8,6 @@ export default class SinglePlayerMenu extends Phaser.Scene {
 	constructor () {
 		super({
 			key: "singlePlayerMenu",
-			maxLights: 30,
 		});
 	}
 

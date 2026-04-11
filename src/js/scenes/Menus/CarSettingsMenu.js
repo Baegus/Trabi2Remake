@@ -9,7 +9,6 @@ export default class CarSettingsMenu extends Phaser.Scene {
 	constructor () {
 		super({
 			key: "carSettingsMenu",
-			maxLights: 30,
 		});
 	}
 

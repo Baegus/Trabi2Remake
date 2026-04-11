@@ -43,5 +43,23 @@ const textToWholePixels = (textObject) => {
 	textObject.y += diffY;
 }
 
+const makeClickable = (gameObject) => {
+	gameObject.setInteractive();
 
-export { createEl, addCl, remCl, smallestAngleDiff, textToWholePixels }
+	gameObject.on("pointerdown", function (pointer) {
+		this.setData("clickStart_" + pointer.id, pointer.downTime);
+	});
+
+	gameObject.on("pointerup", function (pointer) {
+		const pressTime = this.getData("clickStart_" + pointer.id);
+
+		if (pressTime === pointer.downTime && pointer.getDistance() < 15) {
+			gameObject.emit("click", pointer);
+		}
+	});
+
+	return gameObject;
+}
+
+
+export { createEl, addCl, remCl, smallestAngleDiff, textToWholePixels, makeClickable };

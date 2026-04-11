@@ -8,7 +8,6 @@ export default class CreditsMenu extends Phaser.Scene {
 	constructor () {
 		super({
 			key: "creditsMenu",
-			maxLights: 30,
 		});
 	}
 

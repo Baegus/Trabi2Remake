@@ -9,7 +9,6 @@ export default class OptionsMenu extends Phaser.Scene {
 	constructor() {
 		super({
 			key: "optionsMenu",
-			maxLights: 30,
 		});
 	}
 

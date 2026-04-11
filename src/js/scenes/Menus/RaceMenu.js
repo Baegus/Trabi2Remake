@@ -1,6 +1,7 @@
 import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
+import { createTextInput } from "../../modules/textInput";
 
 const debugging = process.env.DEBUG == "true";
 
@@ -8,7 +9,6 @@ export default class RaceMenu extends Phaser.Scene {
 	constructor () {
 		super({
 			key: "raceMenu",
-			maxLights: 30,
 		});
 	}
 
@@ -78,32 +78,16 @@ export default class RaceMenu extends Phaser.Scene {
 			}
 		});
 
-		const playerNameInput = scene.add.bitmapText(163, 244, "systemFont", playerName).setOrigin(0,0);
-		const inputZone = scene.add.zone(playerNameInput.x, playerNameInput.y, 120, 17).setOrigin(0,0);
-		const allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- ";
-		const maxNameLength = 16;
-		let nameInputActive = false;
-		scene.input.on("pointerdown", (pointer) => {
-			if (!inputZone.getBounds().contains(pointer.x, pointer.y)) {
-				nameInputActive = false;
-				playerNameInput.setText(playerName);
-				return;
+		const playerNameInput = createTextInput(scene,{
+			x: 163,
+			y: 244,
+			text: playerName,
+			zoneWidth: 120,
+			changeCallback: (value) => {
+				playerName = value;
+				scene.registry.set("playerName", playerName);
 			}
-			playerName = "";
-			playerNameInput.setText("_");
-			nameInputActive = true;
 		});
-		scene.input.keyboard.on("keydown", (event) => {
-			if (!nameInputActive) return;
-			if (event.key === "Backspace") {
-				playerName = playerName.slice(0, -1);
-			} else if (allowedChars.includes(event.key) && playerName.length < maxNameLength) {
-				playerName += event.key;
-			}
-			playerNameInput.setText(playerName + "_");
-			scene.registry.set("playerName", playerName);
-		});
-
 
 
 		const easyDiffButton = createMenuButton(scene,{
@@ -206,6 +190,7 @@ export default class RaceMenu extends Phaser.Scene {
 			y: 299,
 			texture: "SAVE.FSF",
 			clickCallback: () => {
+				scene.scene.start("saveMenu");
 			}
 		});
 

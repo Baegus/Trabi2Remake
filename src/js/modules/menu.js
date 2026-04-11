@@ -1,3 +1,5 @@
+import { makeClickable } from "./utils";
+
 const createMenuButton = (scene,customConfig) => {
 	const config = {
 		x: customConfig.x || 0,
@@ -13,7 +15,7 @@ const createMenuButton = (scene,customConfig) => {
 	const hasHover = config.hoverTextureFrame!==false;
 	item.name = `menuButton-${config.texture}`;
 	item.setDepth(2).setAlpha(0.001);
-	item.setInteractive();
+	makeClickable(item);
 	item.on("pointerover",() => {
 		item.setAlpha(1);
 		if (hasTooltip) {
@@ -33,7 +35,7 @@ const createMenuButton = (scene,customConfig) => {
 			item.setFrame(0);
 		}
 	});
-	item.on("pointerup",() => {
+	item.on("click",() => {
 		config.clickCallback();
 	});
 	return item;

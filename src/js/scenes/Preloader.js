@@ -106,6 +106,10 @@ export default class Preloader extends Phaser.Scene {
 			"CREDITS.FGF",     // background image
 			"OK5.FSF",         // OK/back button
 
+			// SAVE MENU:
+			"SAVE.FGF",     // background image
+			"BACK3.FSF",    // back button
+
 			// MAP TILES:
 			"POZ.FSF", // default map tiles
 			"POZ2.FSF", // winter map tiles
@@ -208,7 +212,8 @@ export default class Preloader extends Phaser.Scene {
 		// scene.scene.start("mainMenu"); // DEBUG MAIN MENU
 		// scene.scene.start("singlePlayer"); // DEBUG SINGLEPLAYER MENU
 		// scene.scene.start("optionsMenu"); // DEBUG OPTIONS MENU
-		scene.scene.start("carSettingsMenu"); // DEBUG CAR SETTINGS MENU
+		scene.scene.start("saveMenu"); // DEBUG SAVE MENU
+		// scene.scene.start("carSettingsMenu"); // DEBUG CAR SETTINGS MENU
 		// scene.scene.start("raceMenu"); // DEBUG RACE MENU
 		// scene.scene.start("race"); // DEBUG RACE
 	}

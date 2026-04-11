@@ -7,6 +7,7 @@ import SYNPlugin from "./formats/syn";
 import Preloader from "./scenes/Preloader";
 import MainMenu from "./scenes/Menus/MainMenu"
 import OptionsMenu from "./scenes/Menus/OptionsMenu"
+import SaveMenu from "./scenes/Menus/SaveMenu"
 import CreditsMenu from "./scenes/Menus/CreditsMenu"
 import SinglePlayerMenu from "./scenes/Menus/SinglePlayerMenu"
 import RaceMenu from "./scenes/Menus/RaceMenu"
@@ -53,6 +54,7 @@ const config = {
 		OptionsMenu,
 		CarSettingsMenu,
 		CreditsMenu,
+		SaveMenu,
 		Race,
 		HUD,
 	],
