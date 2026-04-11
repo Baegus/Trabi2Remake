@@ -1,6 +1,7 @@
 import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
+import { createSlider } from "../../modules/sliders";
 
 const debugging = process.env.DEBUG == "true";
 
@@ -22,17 +23,9 @@ export default class CarSettingsMenu extends Phaser.Scene {
 		const bg = scene.add.image(0,0,"CAROPT.FGF").setOrigin(0,0);
 		const cursor = createCursor(scene);
 
-		const defaultTires = 1;
-		const defaultTransmissionValue = 12;
-		const defaultBrakesValue = 14;
-
-		// TODO: If game is loaded/in progress, load actual values from registry here:
-		let tires = defaultTires;
-		let transmission = defaultTransmissionValue;
-		let brakes = defaultBrakesValue;
-
-
-		// Both Transmission and Brakes sliders have 22 steps (0-21)
+		let tires = scene.registry.get("currentTires");
+		let transmission = scene.registry.get("transmissionVal");
+		let brakes = scene.registry.get("brakesVal");
 
 		function getTransmissionStats(t) {
 			// Ensure t is within bounds
@@ -65,6 +58,46 @@ export default class CarSettingsMenu extends Phaser.Scene {
 				zeroTo120: zeroTo120
 			};
 		}
+
+		const maxSpeedText = scene.add.bitmapText(132, 216, "systemFont").setOrigin(0, 0);
+		const zeroTo60Text = scene.add.bitmapText(132, 245, "systemFont").setOrigin(0, 0);
+		const zeroTo120Text = scene.add.bitmapText(133, 275, "systemFont").setOrigin(0, 0);
+
+		function updateTransmissionStats() {
+			const stats = getTransmissionStats(transmission);
+			maxSpeedText.setText(stats.maxSpeed);
+			zeroTo60Text.setText(stats.zeroTo60);
+			zeroTo120Text.setText(stats.zeroTo120);
+		}
+		updateTransmissionStats();
+
+
+		const transmissionSlider = createSlider(scene, {
+			xStart: 67,
+			xEnd: 277,
+			y: 118,
+			texture: "POSUV1.FSF",
+			steps: 21,
+			value: scene.registry.get("transmissionVal"),
+			changeCallback: (value) => {
+				transmission = value;
+				scene.registry.set("transmissionVal", transmission);
+				updateTransmissionStats();
+			},
+		});
+
+		const brakesSlider = createSlider(scene, {
+			xStart: 380,
+			xEnd: 590,
+			y: 118,
+			texture: "POSUV2.FSF",
+			steps: 21,
+			value: scene.registry.get("brakesVal"),
+			changeCallback: (value) => {
+				brakes = value;
+				scene.registry.set("brakesVal", brakes);
+			},
+		});
 
 
 		// TIRES SELECTOR:
