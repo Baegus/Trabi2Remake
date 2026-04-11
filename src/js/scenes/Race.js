@@ -123,25 +123,8 @@ export default class Race extends Phaser.Scene {
 
 		const cursor = createCursor(scene);
 
-		const cam = scene.cameras.main;
-
-		cam.scrollX = 2036;
-		cam.scrollY = 2913;
 		
-
-		scene.input.on("pointermove", function (p) {
-			if (!p.isDown) return;
-			cam.stopFollow();
-			cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
-			cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
-		});
-
-		scene.input.on("wheel", function (e) {
-			if (!e.event.shiftKey) return;
-			const amount = (e.deltaY<0?-0.1:0.1);
-			cam.setZoom(cam.zoom - amount);
-		});
-
+		
 		scene.scene.launch("hud");
 
 		async function loadDebug() {
@@ -156,6 +139,9 @@ export default class Race extends Phaser.Scene {
 			scene.input.keyboard.on("keydown-F", (e) => {
 				scene.debugFPSText.setAlpha(scene.debugFPSText.alpha === 1 ? 0 : 1);
 			});
+
+			DEBUG.mouseFreeCam(scene);
+			DEBUG.showTileInfo(scene);
 		}
 		loadDebug();
 	}

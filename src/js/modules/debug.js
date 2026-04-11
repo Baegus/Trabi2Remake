@@ -230,3 +230,38 @@ export const updateBox2dDebug = (scene) => {
 		b2World_Draw(scene.world.worldId, scene.worldDraw);
 	}
 }
+
+export const showTileInfo = (scene) => {
+	const cam = scene.cameras.main;
+
+	let lastTileX = null;
+	let lastTileY = null;
+	scene.input.on("pointermove", function (p) {
+		const tileX = scene.tilemap.worldToTileX(p.x + cam.scrollX);
+		const tileY = scene.tilemap.worldToTileY(p.y + cam.scrollY);
+		if (tileX === lastTileX && tileY === lastTileY) return;
+		console.log(`tileX: ${tileX}\ntileY: ${tileY}\ntileIndex: ${scene.tilemap.getTileAt(tileX, tileY)?.index}`);
+		lastTileX = tileX;
+		lastTileY = tileY;
+	});
+}
+
+export const mouseFreeCam = (scene) => {
+	const cam = scene.cameras.main;
+
+	cam.scrollX = 2036;
+	cam.scrollY = 2913;
+	
+	scene.input.on("pointermove", function (p) {
+		if (!p.isDown) return;
+		cam.stopFollow();
+		cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
+		cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
+	});
+
+	scene.input.on("wheel", function (e) {
+		if (!e.event.shiftKey) return;
+		const amount = (e.deltaY < 0 ? -0.1 : 0.1);
+		cam.setZoom(cam.zoom - amount);
+	});
+}

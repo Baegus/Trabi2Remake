@@ -70,11 +70,11 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	car.width = 32;
 	car.height = 72;
 
-	// linearDamping: 0.5 gives natural friction slowing it down over time
+	// linearDamping: 0 so we can manually control top speed with dynamic drag
 	assignB2BodyBox(car, {
 		type: DYNAMIC,
 		fixedRotation: false,
-		linearDamping: 0.5,
+		linearDamping: 0,
 		angularDamping: 3.0
 	});
 
@@ -93,8 +93,9 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	// TODO - figure out how tire types affect handling and implement here
 
 	// Scale multipliers mapping config to arcade game logic
-	const maxSpeedMph = 91 + Math.round(transmission * 2.6);
-	const maxSpeedMs = maxSpeedMph * 0.4; // Scaled up to feel faster
+	const maxSpeedKph = 91 + Math.round(transmission * 2.6);
+	const speedConversion = 91 / 30; // 30m/s (900px/s or 15px/frame) = 91 kph
+	const maxSpeedMs = maxSpeedKph / speedConversion;
 
 	let zeroTo60;
 	if (transmission <= 2) zeroTo60 = 4;
@@ -175,8 +176,9 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 			}
 		}
 
-		// Apply dynamic speed-based drag so the car naturally hits its Top-Speed limit.
-		const dragCoefficient = forwardForceMag / maxSpeedMs;
+		// Calculate drag consistently based on the car's intended maximum speed capability
+		const theoreticalForwardForce = mass * accelMs2;
+		const dragCoefficient = theoreticalForwardForce / maxSpeedMs;
 		const dragForceMag = -dragCoefficient * forwardVelocityMag;
 
 		const totalForwardForce = forceMag + dragForceMag;
@@ -196,7 +198,8 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		b2Body_SetAngularVelocity(bodyId, currentAngularVel + angularVelDiff * 10 * dt);
 
 		if (hudScene && isPlayer) {
-			hudScene.events.emit("playerCarUpdate", { speedKPH: Math.round(Math.sqrt(velocity.x ** 2 + velocity.y ** 2) * 3.6) });
+			const currentSpeedMps = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
+			hudScene.events.emit("playerCarUpdate", { speedKPH: Math.round(currentSpeedMps * speedConversion) });
 		}
 
 		// Damage calculation based on sudden velocity changes (impacts)
