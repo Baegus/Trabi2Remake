@@ -29,7 +29,7 @@ export default class RaceMenu extends Phaser.Scene {
 		const defaultMap = 0;
 
 		// TODO: If game is loaded/in progress, load actual values from registry here:
-		let playerName = defaultPlayerName;
+		let playerName = scene.registry.get("playerName") || defaultPlayerName;
 		let team = defaultTeam;
 		let map = defaultMap;
 
@@ -78,7 +78,33 @@ export default class RaceMenu extends Phaser.Scene {
 			}
 		});
 
-		// TODO player name input
+		const playerNameInput = scene.add.bitmapText(163, 244, "systemFont", playerName).setOrigin(0,0);
+		const inputZone = scene.add.zone(playerNameInput.x, playerNameInput.y, 120, 17).setOrigin(0,0);
+		const allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- ";
+		const maxNameLength = 16;
+		let nameInputActive = false;
+		scene.input.on("pointerdown", (pointer) => {
+			if (!inputZone.getBounds().contains(pointer.x, pointer.y)) {
+				nameInputActive = false;
+				playerNameInput.setText(playerName);
+				return;
+			}
+			playerName = "";
+			playerNameInput.setText("_");
+			nameInputActive = true;
+		});
+		scene.input.keyboard.on("keydown", (event) => {
+			if (!nameInputActive) return;
+			if (event.key === "Backspace") {
+				playerName = playerName.slice(0, -1);
+			} else if (allowedChars.includes(event.key) && playerName.length < maxNameLength) {
+				playerName += event.key;
+			}
+			playerNameInput.setText(playerName + "_");
+			scene.registry.set("playerName", playerName);
+		});
+
+
 
 		const easyDiffButton = createMenuButton(scene,{
 			x: 118,
@@ -148,6 +174,7 @@ export default class RaceMenu extends Phaser.Scene {
 			clickCallback: () => {
 			}
 		});
+		const lapsText = scene.add.bitmapText(553, 227, "systemFont", "10").setOrigin(0,0);
 		const moreLapsButton = createMenuButton(scene,{
 			x: 570,
 			y: 221,
@@ -155,8 +182,7 @@ export default class RaceMenu extends Phaser.Scene {
 			clickCallback: () => {
 			}
 		});
-		// TODO: Display and set text values
-
+		
 		const lessOpponentsButton = createMenuButton(scene,{
 			x: 532,
 			y: 250,
@@ -164,6 +190,7 @@ export default class RaceMenu extends Phaser.Scene {
 			clickCallback: () => {
 			}
 		});
+		const opponentsText = scene.add.bitmapText(556, 255, "systemFont", "0").setOrigin(0, 0);
 		const moreOpponentsButton = createMenuButton(scene,{
 			x: 570,
 			y: 250,
