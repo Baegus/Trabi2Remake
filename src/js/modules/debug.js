@@ -246,6 +246,9 @@ export const showTileInfo = (scene) => {
 	});
 }
 
+/*
+ * Mouse free cam - hold left mouse button and drag to pan, hold shift and scroll to zoom
+*/
 export const mouseFreeCam = (scene) => {
 	const cam = scene.cameras.main;
 
@@ -263,5 +266,106 @@ export const mouseFreeCam = (scene) => {
 		if (!e.event.shiftKey) return;
 		const amount = (e.deltaY < 0 ? -0.1 : 0.1);
 		cam.setZoom(cam.zoom - amount);
+	});
+}
+
+/*
+ * Switch maps with the M key - shows a simple HTML overlay with a list of maps to choose from
+*/
+export const switchMapsWithM = (scene) => {
+	scene.input.keyboard.on("keydown-M", (e) => {
+		if (scene._mapPickerOpen) return;
+		scene._mapPickerOpen = true;
+
+		const totalMaps = scene.registry.get("totalMaps") || 0;
+		const mapOrder = scene.registry.get("mapOrder") || Array.from({length: totalMaps}, (_,i) => i+1);
+
+		const overlay = document.createElement("div");
+		Object.assign(overlay.style, {
+			position: "fixed", left: 0, top: 0, width: "100%", height: "100%",
+			background: "rgba(0,0,0,0.6)", zIndex: 9999999999,
+			display: "flex", alignItems: "center", justifyContent: "center"
+		});
+
+		const panel = document.createElement("div");
+		Object.assign(panel.style, {
+			background: "#222", padding: "12px", borderRadius: "8px",
+			minWidth: "260px", maxWidth: "90%", boxShadow: "0 6px 20px rgba(0,0,0,0.6)",
+			color: "#fff"
+		});
+
+		const list = document.createElement("div");
+		Object.assign(list.style, { maxHeight: "50vh", overflow: "auto", marginBottom: "12px" });
+
+		const buttons = [];
+		for (let i = 0; i < totalMaps; i++) {
+			const displayNum = mapOrder[i] ?? (i + 1);
+			const btn = document.createElement("button");
+			btn.textContent = `${i + 1}. Track ${displayNum}`;
+			Object.assign(btn.style, {
+				display: "block",
+				width: "100%",
+				margin: "6px 0",
+				padding: "8px 10px",
+				fontSize: "14px",
+				cursor: "pointer",
+				borderRadius: "4px",
+				border: "none",
+				background: "#444",
+				color: "#fff",
+				textAlign: "left"
+			});
+			btn.dataset.index = String(i);
+
+			btn.addEventListener("click", () => {
+				scene.registry.set("currentMap", i);
+				cleanupAndRestart();
+			});
+
+			list.appendChild(btn);
+			buttons.push(btn);
+		}
+
+		panel.appendChild(list);
+
+		const cancelBtn = document.createElement("button");
+		cancelBtn.textContent = "Cancel";
+		Object.assign(cancelBtn.style, {
+			padding: "8px 12px",
+			fontSize: "14px",
+			cursor: "pointer",
+			border: "none",
+			borderRadius: "4px"
+		});
+
+		cancelBtn.addEventListener("click", () => {
+			cleanupAndClose();
+		});
+
+		panel.appendChild(cancelBtn);
+		overlay.appendChild(panel);
+		document.body.appendChild(overlay);
+
+		// allow ESC to close
+		const onEsc = (ev) => {
+			if (ev.key === "Escape") cleanupAndClose();
+		};
+
+		window.addEventListener("keydown", onEsc);
+
+		function cleanupAndClose() {
+			window.removeEventListener("keydown", onEsc);
+			buttons.forEach((b) => b.remove());
+			cancelBtn.remove();
+			list.remove();
+			panel.remove();
+			overlay.remove();
+			scene._mapPickerOpen = false;
+		}
+
+		function cleanupAndRestart() {
+			cleanupAndClose();
+			scene.scene.restart();
+		}
 	});
 }

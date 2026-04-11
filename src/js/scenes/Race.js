@@ -123,7 +123,8 @@ export default class Race extends Phaser.Scene {
 
 		const cursor = createCursor(scene);
 
-		scene.scene.launch("hud");
+		if (!scene.scene.isActive("hud")) scene.scene.launch("hud");
+		
 
 		scene.currentLapTime = 0;
 		scene.bestLapTime = Infinity;
@@ -149,6 +150,7 @@ export default class Race extends Phaser.Scene {
 
 			DEBUG.mouseFreeCam(scene);
 			DEBUG.showTileInfo(scene);
+			DEBUG.switchMapsWithM(scene);
 		}
 		loadDebug();
 	}
