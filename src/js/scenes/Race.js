@@ -123,9 +123,16 @@ export default class Race extends Phaser.Scene {
 
 		const cursor = createCursor(scene);
 
-		
-		
 		scene.scene.launch("hud");
+
+		scene.currentLapTime = 0;
+		scene.bestLapTime = Infinity;
+		scene.totalRaceTime = 0;
+		scene.timerRunning = false;
+		scene.time.delayedCall(500, () => {
+			scene.events.emit("raceStarted");
+			scene.timerRunning = true;
+		});
 
 		async function loadDebug() {
 			if (process.env.DEBUG !== "true") return;
@@ -149,5 +156,9 @@ export default class Race extends Phaser.Scene {
 	update(time, delta) {
 		const scene = this;
 		updateB2worldStepAndCollisions(scene, delta); // update Box2D world and check for collisions
+		if (scene.timerRunning) {
+			scene.currentLapTime += delta;
+			scene.totalRaceTime += delta;
+		}
 	}
 }
