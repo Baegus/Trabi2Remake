@@ -6,6 +6,7 @@ import ThreeDPlugin from "./formats/3d";
 import SYNPlugin from "./formats/syn";
 import Preloader from "./scenes/Preloader";
 import MainMenu from "./scenes/Menus/MainMenu"
+import OptionsMenu from "./scenes/Menus/OptionsMenu"
 import CreditsMenu from "./scenes/Menus/CreditsMenu"
 import SinglePlayerMenu from "./scenes/Menus/SinglePlayerMenu"
 import RaceMenu from "./scenes/Menus/RaceMenu"
@@ -49,6 +50,7 @@ const config = {
 		MainMenu,
 		SinglePlayerMenu,
 		RaceMenu,
+		OptionsMenu,
 		CarSettingsMenu,
 		CreditsMenu,
 		Race,

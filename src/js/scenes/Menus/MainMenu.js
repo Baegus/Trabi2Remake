@@ -1,5 +1,4 @@
-import { textToWholePixels } from "../../modules/utils";
-import { playSound, playMusicTrack } from "../../modules/audio";
+import { playSound, playMusicTrack, setMusicVolume } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 
@@ -47,14 +46,20 @@ export default class MainMenu extends Phaser.Scene {
 			y:149,
 			texture: "MULTI.FSF",
 			tooltipObject: cursorTooltip,
-			tooltipFrame:1
+			tooltipFrame:1,
+			clickCallback: () => {
+				alert("Multiplayer mode is not implemented (yet?)");
+			}
 		});
 		const optionsButton = createMenuButton(scene,{
 			x:487,
 			y:147,
 			texture: "OPTIONS.FSF",
 			tooltipObject: cursorTooltip,
-			tooltipFrame:2
+			tooltipFrame:2,
+			clickCallback: () => {
+				scene.scene.start("optionsMenu");
+			}
 		});
 		const creditsButton = createMenuButton(scene,{
 			x:302,
@@ -80,6 +85,7 @@ export default class MainMenu extends Phaser.Scene {
 		if (scene.registry.get("menuMusicPlaying") !== true) {
 			playMusicTrack(scene,2);
 			scene.registry.set("menuMusicPlaying", true);
+			setMusicVolume(scene, scene.registry.get("musicVolume"));
 		}
 	}
 		

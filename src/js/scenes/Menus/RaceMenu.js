@@ -1,4 +1,3 @@
-import { textToWholePixels } from "../../modules/utils";
 import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
