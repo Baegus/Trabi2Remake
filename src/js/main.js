@@ -12,6 +12,7 @@ import CreditsMenu from "./scenes/Menus/CreditsMenu"
 import SinglePlayerMenu from "./scenes/Menus/SinglePlayerMenu"
 import RaceMenu from "./scenes/Menus/RaceMenu"
 import CarSettingsMenu from "./scenes/Menus/CarSettingsMenu"
+import OutroMenu from "./scenes/Menus/OutroMenu"
 import Race from "./scenes/Race"
 import HUD from "./scenes/HUD"
 
@@ -54,6 +55,7 @@ const config = {
 		OptionsMenu,
 		CarSettingsMenu,
 		CreditsMenu,
+		OutroMenu,
 		SaveMenu,
 		Race,
 		HUD,

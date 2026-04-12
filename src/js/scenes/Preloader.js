@@ -127,6 +127,8 @@ export default class Preloader extends Phaser.Scene {
 			"TACHO.FSF", // speedometer
 			"OBRYSY.FSF", // car damage indicators
 
+			// OUTRO:
+			"OUTRO.FGF", // background image
 
 		];
 		originalGraphicsFiles.forEach((filename) => {
