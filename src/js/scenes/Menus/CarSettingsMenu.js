@@ -22,7 +22,7 @@ export default class CarSettingsMenu extends Phaser.Scene {
 		const bg = scene.add.image(0,0,"CAROPT.FGF").setOrigin(0,0);
 		const cursor = createCursor(scene);
 
-		let tires = scene.registry.get("currentTires");
+		let tires = scene.registry.get("tiresVal");
 		let transmission = scene.registry.get("transmissionVal");
 		let brakes = scene.registry.get("brakesVal");
 
@@ -110,7 +110,7 @@ export default class CarSettingsMenu extends Phaser.Scene {
 			if (selectedTires > lastTires) return;
 			if (selectedTires < 0) return;
 			tires = selectedTires;
-			scene.registry.set("currentTires",tires);
+			scene.registry.set("tiresVal",tires);
 			tireThumbnails.setFrame(selectedTires);
 		};
 		setTires(tires,true);

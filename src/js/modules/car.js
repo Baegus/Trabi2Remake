@@ -29,6 +29,13 @@ const WORLD_TO_KPH = 1 / KPH_TO_WORLD;
 const MAX_REVERSE_KPH = 26;
 const REVERSE_ACCEL = 5.0;
 const MIN_STOP_VELOCITY = 0.5;
+const TURN_ACCEL_DAMP = 0.8;
+
+// Handbrake fine-tuning constants
+const HANDBRAKE_LATERAL_ACCEL_BASE = 12.0;      // Higher base grip so the slide arrests faster (stops completely)
+const HANDBRAKE_LATERAL_ACCEL_TIRE_MULT = 4.0;  // Grip bonus per tiresVal (0-2)
+const HANDBRAKE_STEER_MULT = 3.5;               // Steering speed multiplier during handbrake for sharp 180s
+const HANDBRAKE_DECEL = 18.0;                   // Heavy forward deceleration (m/s^2) during handbrake
 
 // Convert kph to Box2D world speed (meters/second)
 const kphToWorldSpeed = (kph) => KPH_TO_WORLD * kph;
@@ -172,9 +179,9 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	});
 
 	// Load variables from registry with defaults
-	const transmission = scene.registry.get("transmissionVal") ?? 0;
-	const brakesVal = scene.registry.get("brakesVal") ?? 0;
-	// TODO - figure out how tire types affect handling and implement here
+	const transmission = scene.registry.get("transmissionVal") ?? 0; // 0-21; 0 means fast accel and lowest top speed and vice versa
+	const brakesVal = scene.registry.get("brakesVal") ?? 0; // 0-21; 0 means strong brakes with short stopping distance and vice versa
+	const tiresVal = scene.registry.get("tiresVal") ?? 0; // 0-2; tires only seem to affect handbrake turns - 2 has best grip, spins out the least
 
 	const transmissionProfile = buildTransmissionProfile(transmission);
 	const maxSpeedKph = transmissionProfile.maxSpeedKph;
@@ -202,16 +209,22 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		const lateralVelocityMag = velocity.x * right.x + velocity.y * right.y;
 
 		// Input evaluation
-		const isAccelerating = cursors.up.isDown || keys.W.isDown;
+		let isAccelerating = cursors.up.isDown || keys.W.isDown;
 		const isBraking = cursors.down.isDown || keys.S.isDown;
 		const steerInput = (cursors.left.isDown || keys.A.isDown ? 1 : 0) + (cursors.right.isDown || keys.D.isDown ? -1 : 0);
+		const isHandbraking = cursors.space.isDown || keys.SPACE.isDown;
 
-		
+		if (isHandbraking) {
+			isAccelerating = false; // Completely kill gas/throttle
+		}
+
+		const currentSpeedWorld = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
 
 		// Lateral Friction (Tire Grip & Handbrake drifting)
 		let currentMaxLateralAccel = maxLateralAccel;
-		if (cursors.space.isDown || keys.SPACE.isDown) {
-			currentMaxLateralAccel = 4; // Handbrake drift logic
+		if (isHandbraking) {
+			// Handbrake drift logic - scales with tiresVal to affect grip and spin outs
+			currentMaxLateralAccel = HANDBRAKE_LATERAL_ACCEL_BASE + (HANDBRAKE_LATERAL_ACCEL_TIRE_MULT * tiresVal);
 		}
 		const maxImpulse = mass * currentMaxLateralAccel * dt;
 		let lateralImpulseMag = -mass * lateralVelocityMag;
@@ -228,11 +241,30 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		let forceMag = 0;
 		const brakeForceMag = mass * brakeDecelMs2;
 
-		if (isAccelerating) {
+		if (isHandbraking) {
+			if (vWorld > 0.1) {
+				// Strong brake deceleration
+				const combinedDecel = isBraking ? Math.max(HANDBRAKE_DECEL, brakeDecelMs2) : HANDBRAKE_DECEL;
+				forceMag = -mass * combinedDecel * Math.sign(forwardVelocityMag);
+				// Prevent force from pushing the car in the opposite direction (overshoot)
+				if (Math.abs(forceMag * dt / mass) > vWorld) {
+					forceMag = -mass * forwardVelocityMag / dt;
+				}
+			} else {
+				// Snap completely to prevent jitter or turning in place
+				forceMag = -mass * forwardVelocityMag / dt;
+			}
+		} else if (isAccelerating) {
 			if (forwardVelocityMag < -1) {
 				forceMag = brakeForceMag;
 			} else {
-				forceMag = driveForceMag;
+				// Reduce acceleration when turning. Scale by steer input magnitude and current turning factor
+				// turningFactor is computed below; replicate minimal form here (clamped by speed)
+				const steerMagnitude = Math.min(Math.abs(steerInput), 1);
+				// turningFactor previously is Math.min(Math.abs(forwardVelocityMag) / 2, 1)
+				const localTurningFactor = Math.min(Math.abs(forwardVelocityMag) / 2, 1);
+				const damp = 1 - Math.min(1, TURN_ACCEL_DAMP * steerMagnitude * localTurningFactor);
+				forceMag = driveForceMag * damp;
 			}
 		} else if (isBraking) {
 			if (forwardVelocityMag > 1) {
@@ -269,11 +301,25 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 
 		// Steering & Angular Torque
 		const currentAngularVel = b2Body_GetAngularVelocity(bodyId);
-		const turningFactor = Math.min(Math.abs(forwardVelocityMag) / 2, 1); // Limits static turning
-		const baseSteerSpeed = 2.1; // rad/s - seems to match pretty wall with transmissionVal 0 and tires 1
 
-		// Invert steering visually when moving backwards
-		const desiredAngularVel = steerInput * baseSteerSpeed * turningFactor * Math.sign(forwardVelocityMag || 1);
+		// Use total speed during handbrake so the spin doesn't halt abruptly when passing 90 degrees
+		const velocityMagForSteering = isHandbraking ? currentSpeedWorld : Math.abs(forwardVelocityMag);
+		const turningFactor = Math.min(velocityMagForSteering / 2, 1); // Limits static turning
+
+		const baseSteerSpeed = 2.1; // rad/s - seems to match pretty wall with transmissionVal 0
+		const steerSpeed = isHandbraking ? baseSteerSpeed * HANDBRAKE_STEER_MULT : baseSteerSpeed;
+
+		// Invert steering visually when moving backwards, but not while predominantly sliding sideways
+		let directionSign = 1;
+		if (forwardVelocityMag < -0.1 && Math.abs(forwardVelocityMag) > Math.abs(lateralVelocityMag)) {
+			directionSign = -1;
+		}
+
+		// Prevent turning in place completely if stopped
+		let desiredAngularVel = 0;
+		if (currentSpeedWorld > 0.5) {
+			desiredAngularVel = steerInput * steerSpeed * turningFactor * directionSign;
+		}
 
 		// Blend safely to the desired angle over time to prevent unnatural snapping
 		const angularVelDiff = desiredAngularVel - currentAngularVel;
@@ -310,13 +356,12 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 			car.updateDamage();
 		}
 
-		if (!isAccelerating && !isBraking && steerInput === 0 && Math.abs(forwardVelocityMag) < MIN_STOP_VELOCITY && Math.abs(lateralVelocityMag) < MIN_STOP_VELOCITY) {
+		if (((!isAccelerating && !isBraking && steerInput === 0) || isHandbraking) && currentSpeedWorld < MIN_STOP_VELOCITY) {
 			b2Body_SetLinearVelocity(bodyId, new b2Vec2(0, 0));
 			b2Body_SetAngularVelocity(bodyId, 0);
 		}
 
 		if (hudScene && isPlayer) {
-			const currentSpeedWorld = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
 			const kph = worldSpeedToKph(currentSpeedWorld);
 			hudScene.events.emit("playerCarUpdate", { speedKPH: Math.round(kph) });
 		}
