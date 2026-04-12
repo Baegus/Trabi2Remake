@@ -28,6 +28,7 @@ const KPH_TO_WORLD = 0.1537;
 const WORLD_TO_KPH = 1 / KPH_TO_WORLD;
 const MAX_REVERSE_KPH = 26;
 const REVERSE_ACCEL = 5.0;
+const MIN_STOP_VELOCITY = 0.5;
 
 // Convert kph to Box2D world speed (meters/second)
 const kphToWorldSpeed = (kph) => KPH_TO_WORLD * kph;
@@ -205,12 +206,7 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		const isBraking = cursors.down.isDown || keys.S.isDown;
 		const steerInput = (cursors.left.isDown || keys.A.isDown ? 1 : 0) + (cursors.right.isDown || keys.D.isDown ? -1 : 0);
 
-		// Stop micro-gliding at rest if no inputs are pressed
-		if (!isAccelerating && !isBraking && steerInput === 0 && Math.abs(forwardVelocityMag) < 0.2 && Math.abs(lateralVelocityMag) < 0.2) {
-			b2Body_SetLinearVelocity(bodyId, new b2Vec2(0, 0));
-			b2Body_SetAngularVelocity(bodyId, 0);
-			return;
-		}
+		
 
 		// Lateral Friction (Tire Grip & Handbrake drifting)
 		let currentMaxLateralAccel = maxLateralAccel;
@@ -258,7 +254,7 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		} else {
 			// coast / engine braking
 			if (Math.abs(forwardVelocityMag) > 0.5) {
-				forceMag = -mass * 2.0 * Math.sign(forwardVelocityMag);
+				forceMag = -mass * Math.sign(forwardVelocityMag);
 			}
 		}
 
@@ -283,11 +279,7 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		const angularVelDiff = desiredAngularVel - currentAngularVel;
 		b2Body_SetAngularVelocity(bodyId, currentAngularVel + angularVelDiff * 10 * dt);
 
-		if (hudScene && isPlayer) {
-			const currentSpeedWorld = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
-			const kph = worldSpeedToKph(currentSpeedWorld);
-			hudScene.events.emit("playerCarUpdate", { speedKPH: Math.round(kph) });
-		}
+		
 
 		// Damage calculation based on sudden velocity changes (impacts)
 		const lastVel = car.lastVelocity || { x: velocity.x, y: velocity.y };
@@ -316,6 +308,17 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 			car.damage[quadIndex] += impactMag * 2; // Adjust multiplier as needed
 			if (car.damage[quadIndex] > 100) car.damage[quadIndex] = 100;
 			car.updateDamage();
+		}
+
+		if (!isAccelerating && !isBraking && steerInput === 0 && Math.abs(forwardVelocityMag) < MIN_STOP_VELOCITY && Math.abs(lateralVelocityMag) < MIN_STOP_VELOCITY) {
+			b2Body_SetLinearVelocity(bodyId, new b2Vec2(0, 0));
+			b2Body_SetAngularVelocity(bodyId, 0);
+		}
+
+		if (hudScene && isPlayer) {
+			const currentSpeedWorld = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
+			const kph = worldSpeedToKph(currentSpeedWorld);
+			hudScene.events.emit("playerCarUpdate", { speedKPH: Math.round(kph) });
 		}
 
 		car.lastVelocity = { x: velocity.x, y: velocity.y };
