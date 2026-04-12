@@ -14,6 +14,87 @@ import {
 } from "phaser-box2d/dist/PhaserBox2D.js";
 import { assignB2BodyBox, assignB2BodyCircle, createB2World, updateB2worldStepAndCollisions } from "../modules/box2dUtils.js";
 
+const clampTransmission = (v) => Phaser.Math.Clamp(v, 0, 21);
+
+// =============================================================================
+// PHYSICS CONVERSION CONSTANTS
+// =============================================================================
+// Derived from original game measurements (see physicsMeasurements.md):
+//   - At top speed, car travels ~2.306 * kph pixels per 30 frames at 60fps
+//   - pxPerSec = 2.306 * kph * 2 = 4.612 * kph
+//   - Box2D world uses PTM_RATIO = 30 (30 pixels = 1 meter)
+//   - worldSpeed = pxPerSec / 30 = 0.1537 * kph
+const KPH_TO_WORLD = 0.1537;
+const WORLD_TO_KPH = 1 / KPH_TO_WORLD;
+
+// Convert kph to Box2D world speed (meters/second)
+const kphToWorldSpeed = (kph) => KPH_TO_WORLD * kph;
+
+// Convert Box2D world speed to kph
+const worldSpeedToKph = (worldSpeed) => WORLD_TO_KPH * worldSpeed;
+
+// =============================================================================
+// TRANSMISSION PROFILE - Simple fitted functions
+// =============================================================================
+// All formulas derived from linear/quadratic regression on original game data:
+//   topKph = 2.6 * T + 91                    (max error ~0.6 kph)
+//   a1 (low-speed accel) ≈ 30 kph/s          (0-20 kph phase, fairly constant)
+//   a2 (mid-speed accel) = 54 - 0.83 * T     (kph/s, 20-40 kph phase)
+//   a3 (high-speed accel) = 26 - 0.64 * T    (kph/s, for v > 40 kph)
+
+const buildTransmissionProfile = (transmissionVal) => {
+	const T = clampTransmission(transmissionVal);
+
+	// Top speed: linear fit from measured data
+	const topKph = 2.6 * T + 91;
+	const maxSpeedWorld = kphToWorldSpeed(topKph);
+
+	// 3-phase acceleration model (simulates gear behavior from original game):
+	// Phase 1 (0-20 kph):  ~30 kph/s - initial acceleration (fairly constant)
+	// Phase 2 (20-40 kph): decreases with T, from ~54 to ~37 kph/s
+	// Phase 3 (40+ kph):   decreases with T, from ~26 to ~12 kph/s
+	const a1_kph = 30;
+	const a2_kph = 54 - 0.83 * T;
+	const a3_kph = 26 - 0.64 * T;
+
+	// Convert accelerations to world units (m/s²)
+	const a1_world = KPH_TO_WORLD * a1_kph;
+	const a2_world = KPH_TO_WORLD * a2_kph;
+	const a3_world = KPH_TO_WORLD * a3_kph;
+
+	// Speed thresholds in world units
+	const v1_world = kphToWorldSpeed(20);
+	const v2_world = kphToWorldSpeed(40);
+
+	const accelAtWorldSpeed = (worldSpeed) => {
+		if (worldSpeed <= 0) return a1_world;
+		if (worldSpeed >= maxSpeedWorld) return 0;
+
+		if (worldSpeed < v1_world) {
+			// Phase 1: constant acceleration
+			return a1_world;
+		} else if (worldSpeed < v2_world) {
+			// Phase 2: higher constant acceleration
+			return a2_world;
+		} else {
+			// Phase 3: constant acceleration until top speed
+			// Stop just before top speed to avoid overshoot
+			const remaining = maxSpeedWorld - worldSpeed;
+			if (remaining < 0.5) {
+				return a3_world * (remaining / 0.5);
+			}
+			return a3_world;
+		}
+	};
+
+	return {
+		T,
+		topKph,
+		maxSpeedWorld,
+		accelAtWorldSpeed
+	};
+};
+
 export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	const car = scene.add.container(x, y);
 	car.name = `car${team}`;
@@ -88,28 +169,16 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	});
 
 	// Load variables from registry with defaults
-	const transmission = scene.registry.get("transmissionVal") ?? 12; // TODO set this in CarSettingsMenu
-	const brakesVal = scene.registry.get("brakesVal") ?? 14;  // TODO set this in CarSettingsMenu
+	const transmission = scene.registry.get("transmissionVal") ?? 0;
+	const brakesVal = scene.registry.get("brakesVal") ?? 0;
 	// TODO - figure out how tire types affect handling and implement here
 
-	// Scale multipliers mapping config to arcade game logic
-	const maxSpeedKph = 91 + Math.round(transmission * 2.6);
-	const speedConversion = 91 / 30; // 30m/s (900px/s or 15px/frame) = 91 kph
-	const maxSpeedMs = maxSpeedKph / speedConversion;
-
-	let zeroTo60;
-	if (transmission <= 2) zeroTo60 = 4;
-	else if (transmission <= 10) zeroTo60 = 5;
-	else if (transmission <= 15) zeroTo60 = 6;
-	else if (transmission <= 19) zeroTo60 = 7;
-	else zeroTo60 = 8;
-
-	const accelMs2 = 60 / zeroTo60;
+	const transmissionProfile = buildTransmissionProfile(transmission);
+	const maxSpeedKph = transmissionProfile.maxSpeedKph;
+	const maxSpeedMps = transmissionProfile.maxSpeedMps;
 
 	const brakeDecelMs2 = (10 + (brakesVal / 21) * 15) * 2.0;
 	const maxLateralAccel = 25 * 2.0;
-
-
 
 	// Vehicle Control Update loop
 	car.updateRef = (time, delta) => {
@@ -154,35 +223,50 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		b2Body_ApplyLinearImpulseToCenter(bodyId, lateralImpulse, true);
 
 		// Engine Force (Forward/Reverse/Brake)
+		const vWorld = Math.abs(forwardVelocityMag);
+		const throttleAccel = transmissionProfile.accelAtWorldSpeed(vWorld);
+		const driveForceMag = mass * throttleAccel;
+
 		let forceMag = 0;
-		const forwardForceMag = mass * accelMs2;
 		const brakeForceMag = mass * brakeDecelMs2;
 
 		if (isAccelerating) {
 			if (forwardVelocityMag < -1) {
-				forceMag = brakeForceMag; // Braking while in reverse
+				forceMag = brakeForceMag;
 			} else {
-				forceMag = forwardForceMag;
+				forceMag = driveForceMag;
 			}
 		} else if (isBraking) {
 			if (forwardVelocityMag > 1) {
-				forceMag = -brakeForceMag; // Conventional braking
+				forceMag = -brakeForceMag;
 			} else {
-				forceMag = -forwardForceMag * 0.6; // Reversing limits torque
+				const reverseAccel = 5.0;
+				const maxReverseSpeed = 8.0;
+				let reverseForce = -mass * reverseAccel;
+
+				if (vWorld > maxReverseSpeed - 0.5) {
+					const drop = Math.max(0, (maxReverseSpeed - vWorld) / 0.5);
+					reverseForce *= drop;
+				}
+				if (vWorld >= maxReverseSpeed) {
+					reverseForce = 0;
+				}
+				forceMag = reverseForce;
 			}
 		} else {
+			// coast / engine braking
 			if (Math.abs(forwardVelocityMag) > 0.5) {
-				forceMag = -mass * 2.0 * Math.sign(forwardVelocityMag); // Engine braking / friction
+				forceMag = -mass * 2.0 * Math.sign(forwardVelocityMag);
 			}
 		}
 
-		// Calculate drag consistently based on the car's intended maximum speed capability
-		const theoreticalForwardForce = mass * accelMs2;
-		const dragCoefficient = theoreticalForwardForce / maxSpeedMs;
-		const dragForceMag = -dragCoefficient * forwardVelocityMag;
+		// Optional overspeed pullback if collision/downhill pushes past top speed while throttling
+		const overspeed = Math.max(0, vWorld - transmissionProfile.maxSpeedWorld);
+		if (overspeed > 0) {
+			forceMag -= mass * Math.min(overspeed * 8.0, 20.0) * Math.sign(forwardVelocityMag || 1);
+		}
 
-		const totalForwardForce = forceMag + dragForceMag;
-		const forwardForce = new b2Vec2(forward.x * totalForwardForce, forward.y * totalForwardForce);
+		const forwardForce = new b2Vec2(forward.x * forceMag, forward.y * forceMag);
 		b2Body_ApplyForceToCenter(bodyId, forwardForce, true);
 
 		// Steering & Angular Torque
@@ -198,8 +282,9 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		b2Body_SetAngularVelocity(bodyId, currentAngularVel + angularVelDiff * 10 * dt);
 
 		if (hudScene && isPlayer) {
-			const currentSpeedMps = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
-			hudScene.events.emit("playerCarUpdate", { speedKPH: Math.round(currentSpeedMps * speedConversion) });
+			const currentSpeedWorld = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
+			const kph = worldSpeedToKph(currentSpeedWorld);
+			hudScene.events.emit("playerCarUpdate", { speedKPH: Math.round(kph) });
 		}
 
 		// Damage calculation based on sudden velocity changes (impacts)
@@ -207,30 +292,30 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		const dvx = velocity.x - lastVel.x;
 		const dvy = velocity.y - lastVel.y;
 		const impactMag = Math.sqrt(dvx * dvx + dvy * dvy);
-		
+
 		// Threshold for taking damage
 		if (impactMag > 2) {
 			// The change in velocity is away from the impact point, so the hit directed -dv
 			const hitDirX = -dvx;
 			const hitDirY = -dvy;
-			
+
 			// Localize the hit direction using the forward and right vectors
 			const localHitX = hitDirX * right.x + hitDirY * right.y;
 			const localHitY = hitDirX * forward.x + hitDirY * forward.y;
-			
+
 			// Determine quadrant
 			let quadIndex = 0;
 			if (localHitX < 0 && localHitY > 0) quadIndex = 0; // topLeft
 			else if (localHitX >= 0 && localHitY > 0) quadIndex = 1; // topRight
 			else if (localHitX < 0 && localHitY <= 0) quadIndex = 2; // bottomLeft
 			else if (localHitX >= 0 && localHitY <= 0) quadIndex = 3; // bottomRight
-			
+
 			// Apply damage based on impact magnitude
 			car.damage[quadIndex] += impactMag * 2; // Adjust multiplier as needed
 			if (car.damage[quadIndex] > 100) car.damage[quadIndex] = 100;
 			car.updateDamage();
 		}
-		
+
 		car.lastVelocity = { x: velocity.x, y: velocity.y };
 	};
 
