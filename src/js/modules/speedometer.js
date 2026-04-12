@@ -4,7 +4,7 @@ export const createSpeedometer = (scene, x, y) => {
 
 	const angleOffset = -128;
 	const needle = scene.add.rectangle(x + 122, y + 74.5, 1, 51, 0x485048).setOrigin(0.5, 0.68).setDepth(101).setRotation(Phaser.Math.DegToRad(angleOffset));
-	const maxSpeedKPH = 149; // in km/h
+	const maxSpeedKPH = 146; // in km/h
 	const angleRange = 320;
 
 	const lapText = scene.add.bitmapText(x + 22, y + 27, "HUDFontGray", "1/5").setDepth(100);
@@ -15,8 +15,8 @@ export const createSpeedometer = (scene, x, y) => {
 		const speedKPH = event.speedKPH;
 		speedDebugText.setText(`${speedKPH} km/h`);
 
-		// Map speed to needle angle (tune the divisor and offset to match the speedometer design)
-		const needleAngle = Phaser.Math.Clamp(speedKPH / maxSpeedKPH * angleRange + angleOffset, -128, 128);
+		const rawAngle = (speedKPH / maxSpeedKPH) * angleRange + angleOffset;
+		const needleAngle = Phaser.Math.Clamp(rawAngle, angleOffset, angleOffset + angleRange);
 		needle.setRotation(Phaser.Math.DegToRad(needleAngle));
 	});
 
