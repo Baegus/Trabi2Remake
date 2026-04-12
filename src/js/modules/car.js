@@ -239,7 +239,11 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		scene.events.off("update", car.updateRef);
 	});
 
-	scene.cameras.main.startFollow(car, true, 1, 0.5);
-
+	if (isPlayer) {
+		const dynamic = scene.registry.get("dynamicScreenEnabled");
+		const lerpX = dynamic ? 0.1 : 1;
+		const lerpY = dynamic ? 0.1 : 1;
+		scene.cameras.main.startFollow(car, false, lerpX, lerpY);
+	}
 	return car;
 }
