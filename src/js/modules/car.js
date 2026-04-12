@@ -12,7 +12,7 @@ import {
 	b2Vec2,
 	pxm
 } from "phaser-box2d/dist/PhaserBox2D.js";
-import { assignB2BodyBox, assignB2BodyCircle, createB2World, updateB2worldStepAndCollisions } from "../modules/box2dUtils.js";
+import { assignB2BodyBox } from "../modules/box2dUtils.js";
 
 const clampTransmission = (v) => Phaser.Math.Clamp(v, 0, 21);
 
@@ -26,6 +26,8 @@ const clampTransmission = (v) => Phaser.Math.Clamp(v, 0, 21);
 //   - worldSpeed = pxPerSec / 30 = 0.1537 * kph
 const KPH_TO_WORLD = 0.1537;
 const WORLD_TO_KPH = 1 / KPH_TO_WORLD;
+const MAX_REVERSE_KPH = 26;
+const REVERSE_ACCEL = 5.0;
 
 // Convert kph to Box2D world speed (meters/second)
 const kphToWorldSpeed = (kph) => KPH_TO_WORLD * kph;
@@ -240,9 +242,9 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 			if (forwardVelocityMag > 1) {
 				forceMag = -brakeForceMag;
 			} else {
-				const reverseAccel = 5.0;
-				const maxReverseSpeed = 8.0;
-				let reverseForce = -mass * reverseAccel;
+				
+				const maxReverseSpeed = kphToWorldSpeed(MAX_REVERSE_KPH);
+				let reverseForce = -mass * REVERSE_ACCEL;
 
 				if (vWorld > maxReverseSpeed - 0.5) {
 					const drop = Math.max(0, (maxReverseSpeed - vWorld) / 0.5);
