@@ -274,7 +274,7 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		// Steering & Angular Torque
 		const currentAngularVel = b2Body_GetAngularVelocity(bodyId);
 		const turningFactor = Math.min(Math.abs(forwardVelocityMag) / 2, 1); // Limits static turning
-		const baseSteerSpeed = 1.5; // rad/s
+		const baseSteerSpeed = 2.1; // rad/s - seems to match pretty wall with transmissionVal 0 and tires 1
 
 		// Invert steering visually when moving backwards
 		const desiredAngularVel = steerInput * baseSteerSpeed * turningFactor * Math.sign(forwardVelocityMag || 1);
