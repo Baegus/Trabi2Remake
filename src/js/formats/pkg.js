@@ -1,105 +1,62 @@
+import { parseGraphics } from "./graphics";
+
 class PKGFile extends Phaser.Loader.FileTypes.BinaryFile {
-	constructor (loader, key, url, xhrSettings) {
+	constructor(loader, key, url, xhrSettings) {
 		super(loader, key, url, xhrSettings);
 		this.key = key;
 	}
 
-	decodeFileName (arrayBuffer) {
+	decodeFileName(arrayBuffer) {
 		return new TextDecoder("windows-1250").decode(arrayBuffer);
 	}
 
 	processGraphics(data) {
-		return new Promise((resolve) => {
-			const headerSize = 4;
-			const sizeHeader = new Uint16Array(data.buffer.slice(0, headerSize));
-			const imgWidth = sizeHeader[0];
-			const imgHeight = sizeHeader[1];
+		const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
+		const imgWidth = dataView.getUint16(0, true);
+		const imgHeight = dataView.getUint16(2, true);
 
-			const canvas = document.createElement("canvas");
-			const ctx = canvas.getContext("2d");
-
-			canvas.width = imgWidth;
-			canvas.height = imgHeight;
-			const imageData = ctx.createImageData(canvas.width, canvas.height);
-
-			let dataIndex = 0;
-			let pixelIndex = headerSize;
-
-			const redTable = new Array(32);
-			for (let i = 0; i < 32; i++) {
-				redTable[i] = (i * 255) / 31;
-			}
-			const greenTable = new Array(64);
-			for (let i = 0; i < 64; i++) {
-				greenTable[i] = (i * 255) / 63;
-			}
-			const blueTable = redTable;
-
-			for (let y = 0; y < imgHeight; y++) {
-				for (let x = 0; x < imgWidth; x++) {
-					const value = data[pixelIndex] | (data[pixelIndex + 1] << 8);
-
-					const redIdx = (value >> 11) & 0x1F;
-					const greenIdx = (value >> 5) & 0x3F;
-					const blueIdx = value & 0x1F;
-
-					const redValue = redTable[redIdx];
-					const greenValue = greenTable[greenIdx];
-					const blueValue = blueTable[blueIdx];
-
-					imageData.data[dataIndex++] = redValue;
-					imageData.data[dataIndex++] = greenValue;
-					imageData.data[dataIndex++] = blueValue;
-					imageData.data[dataIndex++] = 255;
-
-					pixelIndex += 2;
-				}
-			}
-
-			ctx.putImageData(imageData, 0, 0);
-
-			resolve({
-				image: canvas,
-				frameWidth: imgWidth,
-				frameHeight: imgHeight,
-			});
+		return parseGraphics(data, {
+			headerSize: 4,
+			rowWidth: imgWidth,
+			rowHeight: imgHeight,
+			paddingPerFrame: 0,
+			transparent: false
 		});
 	}
 
-	async unPKG (data) {
+	async unPKG(data) {
 		const decodedFiles = [];
-		const fileCountHeaderLength = 2;
-		const fileCount = new Uint8Array(data.buffer.slice(0, fileCountHeaderLength-1))[0];
+		const fileCount = data[0];
 		const fileNameLength = 12;
 
+		let curByte = 2; // fileCountHeaderLength
 
-		let curByte = fileCountHeaderLength;
-
-		for (let i=0;i<fileCount;i++) {
-			const fileName = this.decodeFileName(data.buffer.slice(curByte,curByte+fileNameLength));
+		for (let i = 0; i < fileCount; i++) {
+			const nameData = data.subarray(curByte, curByte + fileNameLength);
+			const fileName = this.decodeFileName(nameData);
 			curByte += fileNameLength;
-			const imageWidth = new Uint8Array(data.buffer.slice(curByte,curByte+1))[0];
-			curByte+=2;
-			const imageHeight = new Uint8Array(data.buffer.slice(curByte,curByte+1))[0];
-			curByte+=3;
-			const fileLength = (imageWidth*imageHeight)*2;
-			const fileData = data.buffer.slice(curByte-5,curByte+fileLength);
+
+			const imageWidth = data[curByte];
+			curByte += 2;
+			const imageHeight = data[curByte];
+			curByte += 3;
+
+			const fileLength = (imageWidth * imageHeight) * 2;
+			// Subarray guarantees lightweight view over the original buffer
+			const fileData = data.subarray(curByte - 5, curByte + fileLength);
 			curByte += fileLength;
-			decodedFiles.push({
-				name: fileName,
-				data: fileData
-			});
+
+			decodedFiles.push({ name: fileName, data: fileData });
 		}
 		return decodedFiles;
 	}
 
-
 	async onProcess() {
 		const unpackedFiles = await this.unPKG(new Uint8Array(this.xhrLoader.response));
-		
+
 		for (let i = 0; i < unpackedFiles.length; i++) {
 			const fileEntry = unpackedFiles[i];
-			const decoded = await this.processGraphics(new Uint8Array(fileEntry.data));
+			const decoded = await this.processGraphics(fileEntry.data);
 
 			this.data = decoded.image;
 			await this.loader.textureManager.addImage(`${this.key}-${i}`, this.data);
@@ -111,13 +68,12 @@ class PKGFile extends Phaser.Loader.FileTypes.BinaryFile {
 }
 
 export default class PKGPlugin extends Phaser.Plugins.BasePlugin {
-
-	constructor (pluginManager) {
+	constructor(pluginManager) {
 		super(pluginManager);
 		pluginManager.registerFileType('pkg', this.fileCallback);
 	}
 
-	fileCallback (key, url, xhrSettings) {
+	fileCallback(key, url, xhrSettings) {
 		this.addFile(new PKGFile(this, key, url, xhrSettings));
 		return this;
 	}
