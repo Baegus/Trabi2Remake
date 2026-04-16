@@ -241,10 +241,6 @@ window.SYNQuery = {
 		let bit = ((byte >> (7 - bitOffset)) & 1);
 		
 		if (opts.invert) bit = bit ? 0 : 1;
-
-		if (bit === 1) {
-			console.log("car is offroad");
-		}
 		
 		return bit === 1;
 	}
