@@ -127,6 +127,14 @@ export default class Preloader extends Phaser.Scene {
 			"TACHO.FSF", // speedometer
 			"OBRYSY.FSF", // car damage indicators
 
+			// IN-GAME PAUSE MENU:
+			"VNITREK.FSF", // background image, semi-opaque
+			"RAMECEK.FSF", // menu frame
+			"ICO1.FSF",    // continue option
+			"ICO2.FSF",    // exit to menu option
+			"ICO3.FSF",    // CD volume bar
+
+
 			// OUTRO:
 			"OUTRO.FGF", // background image
 

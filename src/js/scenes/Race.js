@@ -93,16 +93,16 @@ export default class Race extends Phaser.Scene {
 			assignB2BodyBox(modelObject, {type: STATIC});
 		}
 
-		if (debugging) {
-			/*
-			
-			*/
-		}
-
-
 		const cursor = createCursor(scene);
 
-		if (!scene.scene.isActive("hud")) scene.scene.launch("hud");
+		if (!scene.scene.isActive("hud")) {
+			if (scene.scene.isPaused("hud")) {
+				const hudScene = scene.scene.get("hud");
+				hudScene.events.emit("showHUD");
+			} else {
+				scene.scene.launch("hud");
+			}
+		}
 		
 
 		scene.currentLapTime = 0;
