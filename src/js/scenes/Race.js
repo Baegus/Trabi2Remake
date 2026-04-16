@@ -83,7 +83,7 @@ export default class Race extends Phaser.Scene {
 		}
 
 		scene.cars = [];
-		scene.playerCar = createCar(scene, toPx(23), toPx(32), 0, true);
+		scene.playerCar = createCar(scene, toPx(23.546), toPx(31.546), 0, true);
 		scene.cars.push(scene.playerCar);
 
 		// scene.add.rectangle(toPx(21), toPx(28), scene.tileSize, scene.tileSize, 0xff0000).setOrigin(0, 0);
@@ -94,32 +94,11 @@ export default class Race extends Phaser.Scene {
 		}
 
 		if (debugging) {
-			const aiNodesGraphics = scene.add.graphics().setAlpha(0.5);
-			if (scene.aiNodes1) {
-				aiNodesGraphics.lineStyle(2, 0x00ff00);
-				aiNodesGraphics.fillStyle(0x00ff00);
-				aiNodesGraphics.beginPath();
-				scene.aiNodes1.forEach(node => {
-					aiNodesGraphics.lineTo(node.x, node.y);
-					aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
-				});
-				aiNodesGraphics.closePath();
-				aiNodesGraphics.strokePath();
-			}
-			if (scene.aiNodes2) {
-				aiNodesGraphics.lineStyle(2, 0x0000ff);
-				aiNodesGraphics.fillStyle(0x0000ff);
-				aiNodesGraphics.beginPath();
-				scene.aiNodes2.forEach(node => {
-					aiNodesGraphics.lineTo(node.x, node.y);
-					aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
-				});
-				aiNodesGraphics.closePath();
-				aiNodesGraphics.strokePath();
-			}
+			/*
+			
+			*/
 		}
 
-		// scene._synOverlay = window.SYNDebug.createInteractiveOverlay("POZ.SYN", scene, scene.tilemap);
 
 		const cursor = createCursor(scene);
 
@@ -147,8 +126,10 @@ export default class Race extends Phaser.Scene {
 			scene.input.keyboard.on("keydown-F", (e) => {
 				scene.debugFPSText.setAlpha(scene.debugFPSText.alpha === 1 ? 0 : 1);
 			});
-
-			DEBUG.mouseFreeCam(scene);
+			
+			DEBUG.showAINodes(scene);
+			DEBUG.showOffroadOverlay(scene);
+			// DEBUG.mouseFreeCam(scene);
 			DEBUG.showTileInfo(scene);
 			DEBUG.switchMapsWithM(scene);
 		}

@@ -77,7 +77,7 @@ export default class MainMenu extends Phaser.Scene {
 			tooltipObject: cursorTooltip,
 			tooltipFrame:4,
 			clickCallback: () => {
-				alert("Just close the tab. :)");
+				scene.scene.start("outroMenu");
 			}
 		});
 

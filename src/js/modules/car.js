@@ -34,7 +34,7 @@ const TURN_ACCEL_DAMP = 0.8;
 // Handbrake fine-tuning constants
 const HANDBRAKE_LATERAL_ACCEL_BASE = 12.0;      // Higher base grip so the slide arrests faster (stops completely)
 const HANDBRAKE_LATERAL_ACCEL_TIRE_MULT = 4.0;  // Grip bonus per tiresVal (0-2)
-const HANDBRAKE_STEER_MULT = 3.5;               // Steering speed multiplier during handbrake for sharp 180s
+const HANDBRAKE_STEER_MULT = 2.5;               // Steering speed multiplier during handbrake for sharp 180s
 const HANDBRAKE_DECEL = 18.0;                   // Heavy forward deceleration (m/s^2) during handbrake
 
 // Convert kph to Box2D world speed (meters/second)
@@ -217,8 +217,15 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		if (isHandbraking) {
 			isAccelerating = false; // Completely kill gas/throttle
 		}
-
+		
 		const currentSpeedWorld = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
+		
+		const carWorldX = car.x;
+		const carWorldY = car.y;
+		let isOffroad = false;
+		if (window.SYNQuery && scene.tilemap) {
+			isOffroad = window.SYNQuery.isOffroad("POZ.SYN", scene.tilemap, carWorldX, carWorldY);
+		}
 
 		// Lateral Friction (Tire Grip & Handbrake drifting)
 		let currentMaxLateralAccel = maxLateralAccel;
@@ -235,7 +242,11 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 
 		// Engine Force (Forward/Reverse/Brake)
 		const vWorld = Math.abs(forwardVelocityMag);
-		const throttleAccel = transmissionProfile.accelAtWorldSpeed(vWorld);
+		let throttleAccel = transmissionProfile.accelAtWorldSpeed(vWorld);
+		
+		if (isOffroad) {
+			throttleAccel *= 0.3; // Much slower acceleration
+		}
 		const driveForceMag = mass * throttleAccel;
 
 		let forceMag = 0;
@@ -323,9 +334,21 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 
 		// Blend safely to the desired angle over time to prevent unnatural snapping
 		const angularVelDiff = desiredAngularVel - currentAngularVel;
-		b2Body_SetAngularVelocity(bodyId, currentAngularVel + angularVelDiff * 10 * dt);
-
+		let newAngularVel = currentAngularVel + angularVelDiff * 10 * dt;
 		
+		if (isOffroad && vWorld > 0.5) {
+			// Apply a sine wave based on time to make it wiggle quickly and smoothly
+			const wiggleForce = Math.sin(time / 20) * 0.8;
+			newAngularVel += wiggleForce;
+			
+			// Also cap speed to simulate heavy friction/drag
+			if (currentSpeedWorld > transmissionProfile.maxSpeedWorld * 0.2) {
+				const drag = new b2Vec2(-velocity.x * mass * 2, -velocity.y * mass * 2);
+				b2Body_ApplyForceToCenter(bodyId, drag, true);
+			}
+		}
+
+		b2Body_SetAngularVelocity(bodyId, newAngularVel);
 
 		// Damage calculation based on sudden velocity changes (impacts)
 		const lastVel = car.lastVelocity || { x: velocity.x, y: velocity.y };

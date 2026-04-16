@@ -138,206 +138,114 @@ export default class SYNPlugin extends Phaser.Plugins.BasePlugin {
 	}
 }
 
-// Debug helper: call window.SYNDebug.drawOverlay(key, scene, tilemap, options)
-// options: { alpha, invert }
-if (!window.SYNDebug) {
-	window.SYNDebug = {};
+// mapSequence defines which tiles map to SYN indices.
+const mapSequence = [
+	{ type: 0, count: 7  },
+	{ type: 1, count: 11 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 1 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 5 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 1 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 3 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 1 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 2 },
+	{ type: 1, count: 3 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 1 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 3 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 2 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 1 },
+	{ type: 1, count: 1 },
+	{ type: 0, count: 37 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 2 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 2 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 2 },
+	{ type: 1, count: 2 },
+	{ type: 0, count: 14 }
+];
+
+const tileIndexToSynIndex = {};
+let seqTileIndex = 0;
+let seqSynIndex = 0;
+
+for (const seq of mapSequence) {
+	for (let i = 0; i < seq.count; i++) {
+		if (seq.type === 1) {
+			tileIndexToSynIndex[seqTileIndex] = seqSynIndex;
+			seqSynIndex++;
+		}
+		seqTileIndex++;
+	}
 }
+// expose the mapping for optional debug tooling (debug module will consume this)
+if (typeof window !== 'undefined') window.SYNTileIndexToSynIndex = tileIndexToSynIndex;
 
-window.SYNDebug.drawOverlay = function(key, scene, tilemap, options = {}) {
-	const record = window.SYNParsed && window.SYNParsed[key];
-	if (!record) {
-		console.warn('SYN overlay: no parsed record for', key);
-		return;
-	}
-	const opts = Object.assign({ alpha: 0.85, invert: true }, options);
+window.SYNQuery = {
+	isOffroad: function(key, tilemap, x, y, options = {}) {
+		const record = window.SYNParsed && window.SYNParsed[key];
+		if (!record) return false;
+		
+		const opts = Object.assign({ invert: true }, options);
+		
+		const TILE_W = record.frameWidth;
+		const TILE_H = record.frameHeight;
+		
+		const tx = Math.floor(x / tilemap.tileWidth);
+		const ty = Math.floor(y / tilemap.tileHeight);
+		const tile = tilemap.getTileAt(tx, ty);
+		
+		if (!tile) return true; // Treat outer bounds as offroad
+		const tileId = tile.index;
 
-	// Compose an overlay canvas sized to the tilemap world pixels and draw each
-	// SYN tile at the corresponding tile position so it lines up with the map.
-	const TILE_W = record.frameWidth;
-	const TILE_H = record.frameHeight;
-
-	const mapPixelWidth = tilemap.width * tilemap.tileWidth;
-	const mapPixelHeight = tilemap.height * tilemap.tileHeight;
-
-	const mapSequence = [
-		{ type: 0, count: 7  },
-		{ type: 1, count: 11 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 1 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 5 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 1 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 3 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 1 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 2 },
-		{ type: 1, count: 3 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 1 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 3 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 2 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 1 },
-		{ type: 1, count: 1 },
-		{ type: 0, count: 37 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 2 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 2 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 2 },
-		{ type: 1, count: 2 },
-		{ type: 0, count: 14 }
-	];
-
-	const tileIndexToSynIndex = {};
-	let seqTileIndex = 0;
-	let seqSynIndex = 0;
-
-	for (const seq of mapSequence) {
-		for (let i = 0; i < seq.count; i++) {
-			if (seq.type === 1) {
-				tileIndexToSynIndex[seqTileIndex] = seqSynIndex;
-				seqSynIndex++;
-			}
-			seqTileIndex++;
+		if ([0, 2, 31, 44, 54, 57].includes(tileId) || (tileId >= 87 && tileId <= 98) || tileId >= 115) {
+			return true;
 		}
-	}
+		
+		const baseSynIndex = tileIndexToSynIndex[tileId];
+		if (baseSynIndex === undefined) return false;
+		
+		const synIndex = (baseSynIndex + record.tileCount) % record.tileCount;
+		if (synIndex < 0 || synIndex >= record.tileCount) return false;
+		
+		const block = record.rawTiles[synIndex];
+		
+		const localX = Math.floor(x) % tilemap.tileWidth;
+		const localY = Math.floor(y) % tilemap.tileHeight;
+		
+		const synX = Math.floor((localX / tilemap.tileWidth) * TILE_W);
+		const synY = Math.floor((localY / tilemap.tileHeight) * TILE_H);
+		
+		if (synX < 0 || synX >= TILE_W || synY < 0 || synY >= TILE_H) return false;
+		
+		const bitIndex = (synY * TILE_W + synX);
+		const byteIdx = Math.floor(bitIndex / 8);
+		const bitOffset = bitIndex % 8;
+		const byte = block[byteIdx];
+		let bit = ((byte >> (7 - bitOffset)) & 1);
+		
+		if (opts.invert) bit = bit ? 0 : 1;
 
-	const canvas = document.createElement('canvas');
-	canvas.width = mapPixelWidth;
-	canvas.height = mapPixelHeight;
-	const ctx = canvas.getContext('2d');
-	const imgData = ctx.createImageData(canvas.width, canvas.height);
-
-	// iterate over tile coordinates
-	for (let ty = 0; ty < tilemap.height; ty++) {
-		for (let tx = 0; tx < tilemap.width; tx++) {
-			const tile = tilemap.getTileAt(tx, ty);
-			if (!tile) continue;
-			const tileId = tile.index;
-
-			const destX = tx * tilemap.tileWidth;
-			const destY = ty * tilemap.tileHeight;
-			const alphaByte = Math.floor(255 * opts.alpha);
-
-			// If tileId is 0, mask the whole tile (fill entire tile rectangle)
-			if ([0, 2, 31, 44, 54, 57].includes(tileId) || (tileId >= 87 && tileId <= 98) || tileId >= 115) {
-				for (let y = 0; y < TILE_H; y++) {
-					for (let x = 0; x < TILE_W; x++) {
-						const globalX = destX + x;
-						const globalY = destY + y;
-						if (globalX < 0 || globalX >= canvas.width || globalY < 0 || globalY >= canvas.height) continue;
-						const pxIdx = (globalY * canvas.width + globalX) * 4;
-						imgData.data[pxIdx + 0] = 255;
-						imgData.data[pxIdx + 1] = 170;
-						imgData.data[pxIdx + 2] = 0;
-						imgData.data[pxIdx + 3] = alphaByte;
-					}
-				}
-				continue;
-			}
-
-			// Get synIndex from our map
-			const baseSynIndex = tileIndexToSynIndex[tileId];
-			if (baseSynIndex === undefined) continue;
-
-			const synIndex = (baseSynIndex + record.tileCount) % record.tileCount;
-			if (synIndex < 0 || synIndex >= record.tileCount) continue;
-
-			const block = record.rawTiles[synIndex];
-
-			// draw the tile's bits into the correct position on the map canvas
-			for (let y = 0; y < TILE_H; y++) {
-				for (let x = 0; x < TILE_W; x++) {
-					let bitIndex = (y * TILE_W + x);
-					const byteIdx = Math.floor(bitIndex / 8);
-					const bitOffset = bitIndex % 8;
-					const byte = block[byteIdx];
-					let bit = ((byte >> (7 - bitOffset)) & 1);
-
-					if (opts.invert) bit = bit ? 0 : 1;
-					if (!bit) continue; // leave transparent
-
-					const globalX = destX + x;
-					const globalY = destY + y;
-					if (globalX < 0 || globalX >= canvas.width || globalY < 0 || globalY >= canvas.height) continue;
-					const pxIdx = (globalY * canvas.width + globalX) * 4;
-					imgData.data[pxIdx + 0] = 255;
-					imgData.data[pxIdx + 1] = 170;
-					imgData.data[pxIdx + 2] = 0;
-					imgData.data[pxIdx + 3] = alphaByte;
-				}
-			}
+		if (bit === 1) {
+			console.log("car is offroad");
 		}
+		
+		return bit === 1;
 	}
-
-	ctx.putImageData(imgData, 0, 0);
-
-	const texKey = `__SYN_DBG__${key}`;
-	const gm = scene.textures;
-	if (gm.exists(texKey)) gm.remove(texKey);
-	gm.addImage(texKey, canvas);
-
-	// place at tilemap world position (tilemap likely at 0,0 but keep generic)
-	const layerX = (tilemap.layers && tilemap.layers[0] && tilemap.layers[0].x) || 0;
-	const layerY = (tilemap.layers && tilemap.layers[0] && tilemap.layers[0].y) || 0;
-
-	const img = scene.add.image(layerX, layerY, texKey).setOrigin(0, 0).setDepth(9999);
-	// scroll with the world (so it lines up with the tilemap)
-	img.setScrollFactor(1);
-
-	return img; // caller can destroy when done
-};
-
-window.SYNDebug.createInteractiveOverlay = function(key, scene, tilemap, options = {}) {
-	const record = window.SYNParsed && window.SYNParsed[key];
-	if (!record) {
-		console.warn('SYN overlay: no parsed record for', key);
-		return null;
-	}
-	const state = {
-		key,
-		scene,
-		tilemap,
-		opts: Object.assign({ alpha: 0.85, invert: true }, options),
-		img: null
-	};
-
-	function draw() {
-		if (state.img && state.img.destroy) {
-			state.img.destroy();
-		}
-		state.img = window.SYNDebug.drawOverlay(state.key, state.scene, state.tilemap, state.opts);
-	}
-
-	// cleanup on scene shutdown/destroy: only remove the overlay image
-	const cleanup = () => {
-		try {
-			if (state.img && state.img.destroy) state.img.destroy();
-		} catch (e) {}
-	};
-
-	state.scene.events.on('shutdown', cleanup);
-	state.scene.events.on('destroy', cleanup);
-
-	// initial draw
-	draw();
-
-	return {
-		destroy: cleanup,
-		state
-	};
 };

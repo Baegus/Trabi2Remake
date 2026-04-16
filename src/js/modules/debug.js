@@ -369,3 +369,168 @@ export const switchMapsWithM = (scene) => {
 		}
 	});
 }
+
+export const showAINodes = (scene) => {
+	const aiNodesGraphics = scene.add.graphics().setAlpha(0.5);
+	if (scene.aiNodes1) {
+		aiNodesGraphics.lineStyle(2, 0x00ff00);
+		aiNodesGraphics.fillStyle(0x00ff00);
+		aiNodesGraphics.beginPath();
+		scene.aiNodes1.forEach(node => {
+			aiNodesGraphics.lineTo(node.x, node.y);
+			aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
+		});
+		aiNodesGraphics.closePath();
+		aiNodesGraphics.strokePath();
+	}
+	if (scene.aiNodes2) {
+		aiNodesGraphics.lineStyle(2, 0x0000ff);
+		aiNodesGraphics.fillStyle(0x0000ff);
+		aiNodesGraphics.beginPath();
+		scene.aiNodes2.forEach(node => {
+			aiNodesGraphics.lineTo(node.x, node.y);
+			aiNodesGraphics.fillRect(node.x - 3, node.y - 3, 6, 6);
+		});
+		aiNodesGraphics.closePath();
+		aiNodesGraphics.strokePath();
+	}
+}
+
+export const showOffroadOverlay = (scene) => {
+	const SYNDebug = {};
+
+	SYNDebug.drawOverlay = function(key, scene, tilemap, options = {}) {
+		const record = window.SYNParsed && window.SYNParsed[key];
+		if (!record) {
+			console.warn("SYN overlay: no parsed record for", key);
+			return null;
+		}
+		const opts = Object.assign({ alpha: 0.85, invert: true }, options);
+
+		const TILE_W = record.frameWidth;
+		const TILE_H = record.frameHeight;
+
+		const mapPixelWidth = tilemap.width * tilemap.tileWidth;
+		const mapPixelHeight = tilemap.height * tilemap.tileHeight;
+
+		const canvas = document.createElement("canvas");
+		canvas.width = mapPixelWidth;
+		canvas.height = mapPixelHeight;
+		const ctx = canvas.getContext("2d");
+		const imgData = ctx.createImageData(canvas.width, canvas.height);
+
+		const tileIndexToSynIndex = window.SYNTileIndexToSynIndex || {};
+
+		for (let ty = 0; ty < tilemap.height; ty++) {
+			for (let tx = 0; tx < tilemap.width; tx++) {
+				const tile = tilemap.getTileAt(tx, ty);
+				if (!tile) continue;
+				const tileId = tile.index;
+
+				const destX = tx * tilemap.tileWidth;
+				const destY = ty * tilemap.tileHeight;
+				const alphaByte = Math.floor(255 * opts.alpha);
+
+				if ([0, 2, 31, 44, 54, 57].includes(tileId) || (tileId >= 87 && tileId <= 98) || tileId >= 115) {
+					for (let y = 0; y < TILE_H; y++) {
+						for (let x = 0; x < TILE_W; x++) {
+							const globalX = destX + x;
+							const globalY = destY + y;
+							if (globalX < 0 || globalX >= canvas.width || globalY < 0 || globalY >= canvas.height) continue;
+							const pxIdx = (globalY * canvas.width + globalX) * 4;
+							imgData.data[pxIdx + 0] = 255;
+							imgData.data[pxIdx + 1] = 170;
+							imgData.data[pxIdx + 2] = 0;
+							imgData.data[pxIdx + 3] = alphaByte;
+						}
+					}
+					continue;
+				}
+
+				const baseSynIndex = tileIndexToSynIndex[tileId];
+				if (baseSynIndex === undefined) continue;
+
+				const synIndex = (baseSynIndex + record.tileCount) % record.tileCount;
+				if (synIndex < 0 || synIndex >= record.tileCount) continue;
+
+				const block = record.rawTiles[synIndex];
+
+				for (let y = 0; y < TILE_H; y++) {
+					for (let x = 0; x < TILE_W; x++) {
+						let bitIndex = (y * TILE_W + x);
+						const byteIdx = Math.floor(bitIndex / 8);
+						const bitOffset = bitIndex % 8;
+						const byte = block[byteIdx];
+						let bit = ((byte >> (7 - bitOffset)) & 1);
+
+						if (opts.invert) bit = bit ? 0 : 1;
+						if (!bit) continue;
+
+						const globalX = destX + x;
+						const globalY = destY + y;
+						if (globalX < 0 || globalX >= canvas.width || globalY < 0 || globalY >= canvas.height) continue;
+						const pxIdx = (globalY * canvas.width + globalX) * 4;
+						imgData.data[pxIdx + 0] = 255;
+						imgData.data[pxIdx + 1] = 170;
+						imgData.data[pxIdx + 2] = 0;
+						imgData.data[pxIdx + 3] = alphaByte;
+					}
+				}
+			}
+		}
+
+		ctx.putImageData(imgData, 0, 0);
+
+		const texKey = `__SYN_DBG__${key}`;
+		const gm = scene.textures;
+		if (gm.exists(texKey)) gm.remove(texKey);
+		gm.addImage(texKey, canvas);
+
+		const layerX = (tilemap.layers && tilemap.layers[0] && tilemap.layers[0].x) || 0;
+		const layerY = (tilemap.layers && tilemap.layers[0] && tilemap.layers[0].y) || 0;
+
+		const img = scene.add.image(layerX, layerY, texKey).setOrigin(0, 0).setDepth(9999);
+		img.setScrollFactor(1);
+
+		return img;
+	};
+
+	SYNDebug.createInteractiveOverlay = function(key, scene, tilemap, options = {}) {
+		const record = window.SYNParsed && window.SYNParsed[key];
+		if (!record) {
+			console.warn("SYN overlay: no parsed record for", key);
+			return null;
+		}
+		const state = {
+			key,
+			scene,
+			tilemap,
+			opts: Object.assign({ alpha: 0.85, invert: true }, options),
+			img: null
+		};
+
+		function draw() {
+			if (state.img && state.img.destroy) {
+				state.img.destroy();
+			}
+			state.img = SYNDebug.drawOverlay(state.key, state.scene, state.tilemap, state.opts);
+		}
+
+		const cleanup = () => {
+			try {
+				if (state.img && state.img.destroy) state.img.destroy();
+			} catch (e) {}
+		};
+
+		state.scene.events.on("shutdown", cleanup);
+		state.scene.events.on("destroy", cleanup);
+
+		draw();
+
+		return {
+			destroy: cleanup,
+			state
+		};
+	};
+	scene.offroadOverlay = SYNDebug.createInteractiveOverlay("POZ.SYN", scene, scene.tilemap);
+}
