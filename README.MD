@@ -21,7 +21,7 @@ The goal of this project is **NOT a full decompilation** or a 1:1 replication of
  - [x] **SND** *(sounds and music)*
  - [ ] **SAV** *(save files); ~50% progress*
  - [ ] **SB** *(probably just a list of all assets)*
- - [ ] **LAP** *(unknown)*
- - [ ] **PAR** *(unknown)*
+ - [x] **LAP** *(coordinates of track checkpoints - finish line, a mid-track checkpoint and the repair depo)*
+ - [x] **PAR** *(car parameters; ~95 progress)*
  - [x] **SP1, SP2** *(positions of additional sprites from ONIKY.FSF and DIVACI.FSF)*
  - [x] **SYN** *(bitmask tiles for defining track turns)*

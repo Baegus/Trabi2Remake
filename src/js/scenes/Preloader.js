@@ -33,6 +33,9 @@ export default class Preloader extends Phaser.Scene {
 			const sp2Filename = filename.replace(".map", ".sp2");
 			scene.load.binary(sp1Filename, `trabi2data/${sp1Filename}`, Uint8Array);
 			scene.load.binary(sp2Filename, `trabi2data/${sp2Filename}`, Uint8Array);
+			 // LAP files (track point definitions):
+			const lapFilename = filename.replace(".map", ".lap");
+			scene.load.binary(lapFilename, `trabi2data/${lapFilename}`, Uint8Array);
 		}
 
 		// Load FGFs and FSFs:
@@ -175,12 +178,18 @@ export default class Preloader extends Phaser.Scene {
 		// Load road curbs bitmask:
 		const roadMaskFile = scene.load.syn("POZ.SYN", `trabi2data/POZ.SYN`);
 
+		// Load PAR files (car parameters):
+		for (let i = 1; i <= 5; i++) {
+			const filename = `PAR${i}.PAR`;
+			scene.load.binary(filename, `trabi2data/${filename}`, Uint8Array);
+		}
+
 		// Load sounds and music from SNDs:
 		const soundFiles = [
-			// "INTRO.SND",  // intro sounds
-			// "MENU.SND", // menu sounds
+			"INTRO.SND",  // intro sounds
+			"MENU.SND", // menu sounds
 			"HUDBA.SND",  // music tracks
-			// "TRABANT.SND", // engine sounds
+			"TRABANT.SND", // engine sounds
 		];
 		soundFiles.forEach((filename) => {
 			scene.load.snd(filename,`trabi2data/${filename}`);
@@ -212,6 +221,7 @@ export default class Preloader extends Phaser.Scene {
 		
 		scene.registry.set("multiplayerCOMPort", 1);
 
+		scene.registry.set("difficulty", 1); // 0 = easy, 1 = medium, 2 = hard
 		scene.registry.set("transmissionVal", 0);
 		scene.registry.set("brakesVal", 0);
 		scene.registry.set("totalTires", 3);
