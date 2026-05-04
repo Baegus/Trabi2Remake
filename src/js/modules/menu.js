@@ -7,6 +7,7 @@ const createMenuButton = (scene,customConfig) => {
 		texture: customConfig.texture || "",
 		hoverTextureFrame: customConfig.hoverTextureFrame!==undefined?customConfig.hoverTextureFrame:false,
 		tooltipObject: customConfig.tooltipObject || false,
+		alphaToggle: customConfig.alphaToggle!==undefined?customConfig.alphaToggle:true,
 		tooltipFrame: customConfig.tooltipFrame!==undefined?customConfig.tooltipFrame:false,
 		clickCallback:  customConfig.clickCallback!==undefined?customConfig.clickCallback:(() => {}),
 	}
@@ -16,6 +17,7 @@ const createMenuButton = (scene,customConfig) => {
 	item.name = `menuButton-${config.texture}`;
 	item.setDepth(2).setAlpha(0.001);
 	makeClickable(item);
+	if (config.alphaToggle == false) item.setAlpha(1);
 	item.on("pointerover",() => {
 		item.setAlpha(1);
 		if (hasTooltip) {
@@ -27,7 +29,7 @@ const createMenuButton = (scene,customConfig) => {
 		}
 	});
 	item.on("pointerout",() => {
-		item.setAlpha(0.001);
+		if (config.alphaToggle) item.setAlpha(0.001);
 		if (hasTooltip) {
 			config.tooltipObject.setAlpha(0);
 		}

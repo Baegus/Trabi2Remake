@@ -2,6 +2,7 @@ import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 import { createSlider } from "../../modules/sliders";
+import { getTransmissionStats, getParKeyForDifficulty } from "../../modules/carParams";
 
 const debugging = process.env.DEBUG == "true";
 
@@ -25,45 +26,15 @@ export default class CarSettingsMenu extends Phaser.Scene {
 		let tires = scene.registry.get("tiresVal");
 		let transmission = scene.registry.get("transmissionVal");
 		let brakes = scene.registry.get("brakesVal");
-
-		function getTransmissionStats(t) {
-			// Ensure t is within bounds
-			t = Math.max(0, Math.min(21, Math.floor(t)));
-
-			// Top Speed Equation
-			// Using 2.6 maintains the 3-2-3-2-3-3 pattern perfectly.
-			const maxSpeed = 91 + Math.round(t * 2.6);
-
-			// 0-60 Acceleration (Step logic)
-			// These steps are non-linear (likely hand-tuned)
-			let zeroTo60;
-			if (t <= 2) zeroTo60 = 4;
-			else if (t <= 10) zeroTo60 = 5;
-			else if (t <= 15) zeroTo60 = 6;
-			else if (t <= 19) zeroTo60 = 7;
-			else zeroTo60 = 8;
-
-			// 0-120 Acceleration (Step logic)
-			let zeroTo120 = "---";
-			if (t >= 11) {
-				const z120Values = [18, 18, 19, 19, 20, 21, 21, 22, 23, 24, 25];
-				zeroTo120 = z120Values[t - 11] + "s";
-			}
-
-			return {
-				index: t,
-				maxSpeed: maxSpeed,
-				zeroTo60: zeroTo60 + "s",
-				zeroTo120: zeroTo120
-			};
-		}
+		const difficulty = scene.registry.get("difficulty");
+		const parData = scene.cache.binary.get(getParKeyForDifficulty(difficulty));
 
 		const maxSpeedText = scene.add.bitmapText(132, 216, "systemFont").setOrigin(0, 0);
 		const zeroTo60Text = scene.add.bitmapText(132, 245, "systemFont").setOrigin(0, 0);
 		const zeroTo120Text = scene.add.bitmapText(133, 275, "systemFont").setOrigin(0, 0);
 
 		function updateTransmissionStats() {
-			const stats = getTransmissionStats(transmission);
+			const stats = getTransmissionStats(parData, difficulty, transmission);
 			maxSpeedText.setText(stats.maxSpeed);
 			zeroTo60Text.setText(stats.zeroTo60);
 			zeroTo120Text.setText(stats.zeroTo120);

@@ -4,6 +4,7 @@ import { createCursor } from "../modules/cursor";
 import { parse3DM } from "../modules/3dm";
 import { parseIL } from "../modules/il";
 import { parseSP1SP2 } from "../modules/sp1sp2";
+import { parseLAP } from "../modules/lap";
 import { createCar } from "../modules/car";
 import { STATIC, b2Body_ApplyLinearImpulse, b2Body_GetLinearVelocity, b2Body_GetMass, b2Body_GetTransform, b2Body_GetWorldCenterOfMass, b2Body_SetTransform, b2Vec2, pxm } from "phaser-box2d/dist/PhaserBox2D.js";
 import { assignB2BodyBox, assignB2BodyCircle, createB2World, updateB2worldStepAndCollisions } from "../modules/box2dUtils.js";
@@ -57,6 +58,13 @@ export default class Race extends Phaser.Scene {
 		// Save parsed entries for placing exact images later in create()
 		scene.additionalSprites1Entries = sp1Parsed.entries || [];
 		scene.additionalSprites2Entries = sp2Parsed.entries || [];
+
+		// Parse track point data (LAP)
+		const lapFile = scene.cache.binary.get(currentMapFile.replace(".map", ".lap"));
+		if (lapFile) {
+			scene.points = parseLAP(lapFile);
+		}
+
 	}
 
 	create() {
@@ -82,8 +90,16 @@ export default class Race extends Phaser.Scene {
 			const image = scene.add.image(e.x, e.y, mapTexturesSP2, e.frame).setOrigin(0, 0).setDepth(2);
 		}
 
+		for (const pointData in scene.points) {
+			const point = scene.points[pointData];
+			if (debugging) {
+				const color = [0xff00ff, 0x00ff00, 0xffff00][["start", "checkpoint", "repairDepo"].indexOf(pointData)];
+				const pointRect = scene.add.rectangle(point.x, point.y, 100, point.h, color, 0.5).setOrigin(0, 0);
+			}
+		}
+
 		scene.cars = [];
-		scene.playerCar = createCar(scene, toPx(23.546), toPx(31.546), 0, true);
+		scene.playerCar = createCar(scene, scene.points.start.x, scene.points.start.y, 0, true);
 		scene.cars.push(scene.playerCar);
 
 		// scene.add.rectangle(toPx(21), toPx(28), scene.tileSize, scene.tileSize, 0xff0000).setOrigin(0, 0);

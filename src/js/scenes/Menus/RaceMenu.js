@@ -94,26 +94,41 @@ export default class RaceMenu extends Phaser.Scene {
 			x: 118,
 			y: 304,
 			texture: "SW1.FSF",
+			alphaToggle: false,
 			clickCallback: () => {
-				// easyDiffButton.setFrame(1);
+				setDiff(0);
 			}
 		});
 		const mediumDiffButton = createMenuButton(scene,{
 			x: 191,
 			y: 303,
 			texture: "SW2.FSF",
+			alphaToggle: false,
 			clickCallback: () => {
-				// mediumDiffButton.setFrame(1);
+				setDiff(1);
 			}
 		});
 		const hardDiffButton = createMenuButton(scene,{
 			x: 262,
 			y: 303,
 			texture: "SW3.FSF",
+			alphaToggle: false,
 			clickCallback: () => {
-				// hardDiffButton.setFrame(1);
+				setDiff(2);
 			}
 		});
+
+		const diffButtons = [easyDiffButton, mediumDiffButton, hardDiffButton];
+		const setDiff = (val) => {
+			scene.registry.set("difficulty", val);
+			diffButtons.forEach((btn, i) => {
+				btn.setFrame(i === val ? 1 : 0);
+				console.log("Difficulty set to", val);
+				console.log("frame should be", i === val ? 1 : 0);
+
+			});
+		};
+		setDiff(scene.registry.get("difficulty") || 0);
 
 		// RIGHT COLUMN:
 

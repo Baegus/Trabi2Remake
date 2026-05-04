@@ -13,6 +13,7 @@ import {
 	pxm
 } from "phaser-box2d/dist/PhaserBox2D.js";
 import { assignB2BodyBox } from "../modules/box2dUtils.js";
+import { getTransmissionStats, getParKeyForDifficulty } from "./carParams.js";
 
 const clampTransmission = (v) => Phaser.Math.Clamp(v, 0, 21);
 
@@ -44,28 +45,34 @@ const kphToWorldSpeed = (kph) => KPH_TO_WORLD * kph;
 const worldSpeedToKph = (worldSpeed) => WORLD_TO_KPH * worldSpeed;
 
 // =============================================================================
-// TRANSMISSION PROFILE - Simple fitted functions
+// TRANSMISSION PROFILE
 // =============================================================================
-// All formulas derived from linear/quadratic regression on original game data:
-//   topKph = 2.6 * T + 91                    (max error ~0.6 kph)
-//   a1 (low-speed accel) ≈ 30 kph/s          (0-20 kph phase, fairly constant)
-//   a2 (mid-speed accel) = 54 - 0.83 * T     (kph/s, 20-40 kph phase)
-//   a3 (high-speed accel) = 26 - 0.64 * T    (kph/s, for v > 40 kph)
 
-const buildTransmissionProfile = (transmissionVal) => {
+const buildTransmissionProfile = (stats, transmissionVal) => {
 	const T = clampTransmission(transmissionVal);
 
-	// Top speed: linear fit from measured data
-	const topKph = 2.6 * T + 91;
+	const topKph = stats.finalSpeed;
 	const maxSpeedWorld = kphToWorldSpeed(topKph);
 
 	// 3-phase acceleration model (simulates gear behavior from original game):
-	// Phase 1 (0-20 kph):  ~30 kph/s - initial acceleration (fairly constant)
-	// Phase 2 (20-40 kph): decreases with T, from ~54 to ~37 kph/s
-	// Phase 3 (40+ kph):   decreases with T, from ~26 to ~12 kph/s
-	const a1_kph = 30;
-	const a2_kph = 54 - 0.83 * T;
-	const a3_kph = 26 - 0.64 * T;
+	// These base values were tuned for Medium difficulty (diff=1).
+	let a1_kph = 30;
+	let a2_kph = 54 - 0.83 * T;
+	let a3_kph = 26 - 0.64 * T;
+
+	// Scale accelerations based on the ratio of target zeroTo60 time.
+	// We need a reference Medium 0-60 time for this transmission.
+	// We can use a dummy 25-byte buffer where r2=baseF2 (0.142)
+	const dummyBytes = new Uint8Array(25);
+	dummyBytes[6] = 0x84; // Real48 exponent 132 for 0.142... approx
+	// In carParams.js, for diff=1: par1_60 = 4 + Number(T >= 3) + Number(T >= 11) + Number(T >= 16) + Number(T >= 20);
+	const ref_par1_60 = 4 + Number(T >= 3) + Number(T >= 11) + Number(T >= 16) + Number(T >= 20);
+	
+	const accelScale = ref_par1_60 / stats.finalAccelTime;
+	
+	a1_kph *= accelScale;
+	a2_kph *= accelScale;
+	a3_kph *= accelScale;
 
 	// Convert accelerations to world units (m/s²)
 	const a1_world = KPH_TO_WORLD * a1_kph;
@@ -106,7 +113,7 @@ const buildTransmissionProfile = (transmissionVal) => {
 };
 
 export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
-	const car = scene.add.container(x, y);
+	const car = scene.add.container(x+55, y+53);
 	car.name = `car${team}`;
 
 	const hudScene = scene.scene.get("hud");
@@ -151,7 +158,9 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		this.topRight.setFrame(this.team * 4 + dmgToFrame(this.damage[1]));
 		this.bottomLeft.setFrame(this.team * 4 + dmgToFrame(this.damage[2]));
 		this.bottomRight.setFrame(this.team * 4 + dmgToFrame(this.damage[3]));
-		hudScene.events.emit("carDamage", { damageState: this.damage });
+		if (hudScene && isPlayer) {
+			hudScene.events.emit("carDamage", { damageState: this.damage });
+		}
 	};
 	car.updateDamage();
 
@@ -179,13 +188,22 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	});
 
 	// Load variables from registry with defaults
+	const difficulty = scene.registry.get("difficulty") ?? 1;
 	const transmission = scene.registry.get("transmissionVal") ?? 0; // 0-21; 0 means fast accel and lowest top speed and vice versa
 	const brakesVal = scene.registry.get("brakesVal") ?? 0; // 0-21; 0 means strong brakes with short stopping distance and vice versa
 	const tiresVal = scene.registry.get("tiresVal") ?? 0; // 0-2; tires only seem to affect handbrake turns - 2 has best grip, spins out the least
 
-	const transmissionProfile = buildTransmissionProfile(transmission);
-	const maxSpeedKph = transmissionProfile.maxSpeedKph;
-	const maxSpeedMps = transmissionProfile.maxSpeedMps;
+	// All cars use the same PAR file based on difficulty (Easy→PAR1, Medium→PAR3, Hard→PAR5).
+	// Car type modifiers (hardcoded in the original EXE) differentiate opponent stats.
+	// Player is car type 4 (all modifiers zero). Opponent types map from team index.
+	const parKey = getParKeyForDifficulty(difficulty);
+	const carType = isPlayer ? 4 : team;
+	const parData = scene.cache.binary.get(parKey);
+	const stats = getTransmissionStats(parData, difficulty, transmission, carType);
+
+	const transmissionProfile = buildTransmissionProfile(stats, transmission);
+	const maxSpeedKph = transmissionProfile.topKph;
+	const maxSpeedWorld = transmissionProfile.maxSpeedWorld;
 
 	const brakeDecelMs2 = (10 + (brakesVal / 21) * 15) * 2.0;
 	const maxLateralAccel = 25 * 2.0;
