@@ -32,11 +32,14 @@ const REVERSE_ACCEL = 5.0;
 const MIN_STOP_VELOCITY = 0.5;
 const TURN_ACCEL_DAMP = 0.8;
 
-// Handbrake fine-tuning constants
-const HANDBRAKE_LATERAL_ACCEL_BASE = 12.0;      // Higher base grip so the slide arrests faster (stops completely)
-const HANDBRAKE_LATERAL_ACCEL_TIRE_MULT = 4.0;  // Grip bonus per tiresVal (0-2)
-const HANDBRAKE_STEER_MULT = 2.5;               // Steering speed multiplier during handbrake for sharp 180s
-const HANDBRAKE_DECEL = 18.0;                   // Heavy forward deceleration (m/s^2) during handbrake
+// Handbrake fine-tuning constants (matched to original TRABI2.EXE car_physicsUpdate @ 17ee:345c)
+// Original game: handbrake kills throttle, disables steering self-centering, spins via car[0x13]
+// formula: angVel += spinParam / (slipAngle + const). No direct forward brake force applied.
+const HANDBRAKE_LATERAL_ACCEL_BASE = 6.0;       // Low base grip for pronounced slide/drift
+const HANDBRAKE_LATERAL_ACCEL_TIRE_MULT = 6.0;  // Grip bonus per tiresVal (0-2) — bigger range so tires matter more
+const HANDBRAKE_STEER_MULT_BASE = 3.5;          // Base steering speed multiplier during handbrake
+const HANDBRAKE_STEER_TIRE_REDUCTION = 0.5;     // Less spin-out with better tires: mult = base - reduction*tiresVal
+const HANDBRAKE_DECEL_FRACTION = 0.35;          // Fraction of normal brakeDecel applied (original has no direct brake force)
 
 // Convert kph to Box2D world speed (meters/second)
 const kphToWorldSpeed = (kph) => KPH_TO_WORLD * kph;
@@ -272,8 +275,10 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 
 		if (isHandbraking) {
 			if (vWorld > 0.1) {
-				// Strong brake deceleration
-				const combinedDecel = isBraking ? Math.max(HANDBRAKE_DECEL, brakeDecelMs2) : HANDBRAKE_DECEL;
+				// Original game: handbrake has NO direct forward brake force; car slows via lateral drift friction.
+				// We apply a fraction of normal brake decel to approximate that friction-based slowdown.
+				const handbrakeDecel = brakeDecelMs2 * HANDBRAKE_DECEL_FRACTION;
+				const combinedDecel = isBraking ? Math.max(handbrakeDecel, brakeDecelMs2) : handbrakeDecel;
 				forceMag = -mass * combinedDecel * Math.sign(forwardVelocityMag);
 				// Prevent force from pushing the car in the opposite direction (overshoot)
 				if (Math.abs(forceMag * dt / mass) > vWorld) {
@@ -336,7 +341,9 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		const turningFactor = Math.min(velocityMagForSteering / 2, 1); // Limits static turning
 
 		const baseSteerSpeed = 2.1; // rad/s - seems to match pretty wall with transmissionVal 0
-		const steerSpeed = isHandbraking ? baseSteerSpeed * HANDBRAKE_STEER_MULT : baseSteerSpeed;
+		// Original game: spin-out scales inversely with tire quality (car[0x13] parameter)
+		const handbrakeSteerMult = HANDBRAKE_STEER_MULT_BASE - (HANDBRAKE_STEER_TIRE_REDUCTION * tiresVal);
+		const steerSpeed = isHandbraking ? baseSteerSpeed * handbrakeSteerMult : baseSteerSpeed;
 
 		// Invert steering visually when moving backwards, but not while predominantly sliding sideways
 		let directionSign = 1;
