@@ -1,4 +1,4 @@
-import { playSound, playMusicTrack, setMusicVolume } from "../../modules/audio";
+import { setMenuMusic } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 
@@ -17,7 +17,6 @@ export default class MainMenu extends Phaser.Scene {
 
 	create() {
 		const scene = this;
-		scene.events.off();
 		const bg = scene.add.image(0,0,"MAIN.FGF").setOrigin(0,0);
 
 		const cursor = createCursor(scene);
@@ -81,11 +80,7 @@ export default class MainMenu extends Phaser.Scene {
 			}
 		});
 
-		if (scene.registry.get("menuMusicPlaying") !== true) {
-			playMusicTrack(scene,2);
-			scene.registry.set("menuMusicPlaying", true);
-			setMusicVolume(scene, scene.registry.get("musicVolume"));
-		}
+		setMenuMusic(scene);
 	}
 		
 }

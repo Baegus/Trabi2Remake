@@ -2,6 +2,9 @@ import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 import { createOriginalChampionship } from "../../modules/originalRace.js";
+import { parseMenuLayout } from "../../formats/mnu.js";
+import { formatSaveDate, readSaveSlot, restoreGameState } from "../../modules/saveGame.js";
+import { makeClickable } from "../../modules/utils";
 
 const debugging = process.env.DEBUG == "true";
 
@@ -18,9 +21,24 @@ export default class SinglePlayerMenu extends Phaser.Scene {
 
 	create() {
 		const scene = this;
-		scene.events.off();
 		const bg = scene.add.image(0,0,"SINGLE.FGF").setOrigin(0,0);
 		const cursor = createCursor(scene);
+		const layout = parseMenuLayout(scene.cache.binary.get("SINGLE.MNU"));
+		for (const [slot, position] of layout.textPositions.entries()) {
+			let saved = null;
+			try { saved = readSaveSlot(window.localStorage, slot); } catch {}
+			const stamp = saved ? formatSaveDate(saved.savedAt) : { time: "12:00", date: "01.01" };
+			const row = scene.add.bitmapText(position.x, position.y, "systemFont",
+				`${(saved?.name ?? "-volna-").padEnd(8)} ${stamp.time} ${stamp.date}`, 8).setOrigin(0, 0).setTint(0x000000).setAlpha(1);
+			if (!saved) continue;
+			makeClickable(row);
+			row.on("pointerover", () => playSound(scene, "MENU.SND-KLIK1", { global: true }));
+			row.on("click", () => {
+				playSound(scene, "MENU.SND-KLIK2", { global: true });
+				restoreGameState(scene.registry, saved);
+				scene.scene.start("raceMenu");
+			});
+		}
 
 
 		const backButton = createMenuButton(scene,{

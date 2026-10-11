@@ -3,6 +3,7 @@ import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 import { createTextInput } from "../../modules/textInput";
 import { getOriginalRaceSettings } from "../../modules/originalRace.js";
+import { parseMenuLayout } from "../../formats/mnu.js";
 
 const debugging = process.env.DEBUG == "true";
 
@@ -19,9 +20,10 @@ export default class RaceMenu extends Phaser.Scene {
 
 	create() {
 		const scene = this;
-		scene.events.off();
 
 		const currentRaceType = scene.registry.get("currentRaceType");
+		const ghostRace = currentRaceType === "ghostRace";
+		const layout = parseMenuLayout(scene.cache.binary.get("NEW.MNU"));
 		const bg = scene.add.image(0,0,"NEW.FGF").setOrigin(0,0);
 		const cursor = createCursor(scene);
 
@@ -34,6 +36,7 @@ export default class RaceMenu extends Phaser.Scene {
 
 		// TODO: If game is loaded/in progress, load actual values from registry here:
 		let playerName = scene.registry.get("playerName") || defaultPlayerName;
+		scene.registry.set("playerName", playerName);
 		let team = scene.registry.get("playerTeam") ?? defaultTeam;
 		let map = championship?.track ?? scene.registry.get("currentMap") ?? defaultMap;
 		if (championship) {
@@ -83,13 +86,14 @@ export default class RaceMenu extends Phaser.Scene {
 			y: 184,
 			texture: "NASVOZ.FSF",
 			clickCallback: () => {
-				scene.scene.start("carSettingsMenu");
+				if (!ghostRace) scene.scene.start("carSettingsMenu");
 			}
 		});
+		if (ghostRace) carSettingsButton.setFrame(1).setAlpha(1).disableInteractive();
 
 		const playerNameInput = createTextInput(scene,{
-			x: 163,
-			y: 244,
+			x: layout.inputs[0].x,
+			y: layout.inputs[0].y,
 			text: playerName,
 			zoneWidth: 120,
 			changeCallback: (value) => {
@@ -186,7 +190,7 @@ export default class RaceMenu extends Phaser.Scene {
 		});
 		const lapsText = scene.add.bitmapText(553, 227, "systemFont", String(settings().laps)).setOrigin(0,0);
 		const setLaps = (offset) => {
-			if (championship) return;
+			if (championship || currentRaceType === "ghostRace") return;
 			scene.registry.set("raceLaps", Math.max(1, Math.min(99, settings().laps + offset)));
 			lapsText.setText(String(settings().laps));
 		};
@@ -250,9 +254,10 @@ export default class RaceMenu extends Phaser.Scene {
 			y: 396,
 			texture: "KLASIF.FSF",
 			clickCallback: () => {
-				scene.showStandings();
+				if (!ghostRace) scene.showStandings();
 			}
 		});
+		if (ghostRace) standingsButton.setFrame(1).setAlpha(1).disableInteractive();
 
 		const startRaceButton = createMenuButton(scene,{
 			x: 469,

@@ -30,6 +30,7 @@ export function getOriginalRaceSettings({ mode = "freeRace", championship, laps 
 		const training = championship.phase === "training";
 		return { training, laps: training ? 10 : ORIGINAL_CHAMPIONSHIP_LAPS[championship.track], opponents: training ? 0 : 5 };
 	}
+	if (mode === "ghostRace") return { training: false, laps: 4, opponents: 0 };
 	return { training: false, laps: Math.max(1, Math.min(99, Math.trunc(laps))),
 		opponents: mode === "ghostRace" ? 0 : Math.max(0, Math.min(5, Math.trunc(opponents))) };
 }
@@ -81,7 +82,9 @@ export function crossesOriginalGate(previous, position, gate) {
 export function stepOriginalRacerProgress(progress, position, points, elapsed, lapLimit) {
 	if (progress.finished) return null;
 	const checkpoint = crossesOriginalGate(progress.previous, position, points.checkpoint);
-	const start = crossesOriginalGate(progress.previous, position, points.start);
+	const depotGate = points.repairDepo && { x: points.repairDepo.x, y: points.repairDepo.y, h: 200 };
+	const start = crossesOriginalGate(progress.previous, position, points.start) ||
+		(depotGate && crossesOriginalGate(progress.previous, position, depotGate));
 	if (checkpoint && !progress.checkpointInside) progress.checkpoint = true;
 	let event = null;
 	if (start && !progress.startInside && progress.checkpoint && position.x < progress.previous.x) {

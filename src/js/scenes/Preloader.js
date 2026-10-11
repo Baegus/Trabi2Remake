@@ -35,6 +35,9 @@ export default class Preloader extends Phaser.Scene {
 			 // LAP files (track point definitions):
 			const lapFilename = filename.replace(".MAP", ".LAP");
 			scene.load.binary(lapFilename, `trabi2data/${lapFilename}`, Uint8Array);
+			const ghostName = `T${i.toString().padStart(2, "0")}_04`;
+			scene.load.binary(`${ghostName}.GHO`, `trabi2data/${ghostName}.GHO`, Uint8Array);
+			scene.load.binary(`${ghostName}.TRR`, `trabi2data/${ghostName}.TRR`, Uint8Array);
 		}
 
 		// Load FGFs and FSFs:
@@ -156,6 +159,9 @@ export default class Preloader extends Phaser.Scene {
 			scene.load.fsf(filename,`trabi2data/${filename}`);
 		});
 		scene.load.binary("KLASIF.MNU", "trabi2data/KLASIF.MNU", Uint8Array);
+		scene.load.binary("NEW.MNU", "trabi2data/NEW.MNU", Uint8Array);
+		scene.load.binary("SAVE.MNU", "trabi2data/SAVE.MNU", Uint8Array);
+		scene.load.binary("SINGLE.MNU", "trabi2data/SINGLE.MNU", Uint8Array);
 
 		// Load texture PKGs:
 		const texturePackages = [

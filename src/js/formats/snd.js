@@ -2,7 +2,7 @@ class SNDFile extends Phaser.Loader.FileTypes.BinaryFile {
 	constructor(loader, key, url, xhrSettings) {
 		super(loader, key, url, xhrSettings);
 		this.key = key;
-		this.audioContext = new AudioContext();
+		this.audioContext = loader.scene.sound.context;
 	}
 
 	decodeFileName(bufferView) {
@@ -11,7 +11,7 @@ class SNDFile extends Phaser.Loader.FileTypes.BinaryFile {
 
 	async unpackSND(data) {
 		const decodedFiles = [];
-		const dataView = new DataView(data.buffer);
+		const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
 		const fileCount = data[0];
 
 		const fileNameLength = 8;
@@ -28,7 +28,7 @@ class SNDFile extends Phaser.Loader.FileTypes.BinaryFile {
 			const offset = dataView.getUint32(offsetInfoStart, true);
 			const length = dataView.getUint32(offsetInfoStart + 4, true);
 
-			const pcmData = new Int8Array(data.buffer, offset, length);
+			const pcmData = new Int8Array(data.buffer, data.byteOffset + offset, length);
 
 			const audioBuffer = this.audioContext.createBuffer(1, length, 22050);
 			const channelData = audioBuffer.getChannelData(0);

@@ -18,7 +18,6 @@ export default class OptionsMenu extends Phaser.Scene {
 
 	create() {
 		const scene = this;
-		scene.events.off();
 		const bg = scene.add.image(0, 0, "OPTIONS.FGF").setOrigin(0, 0);
 		const cursor = createCursor(scene);
 

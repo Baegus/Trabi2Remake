@@ -1,5 +1,5 @@
 import { textToWholePixels } from "../modules/utils";
-import { playSound } from "../modules/audio";
+import { createRaceAudio, nextMusicTrack, playMusicTrack, setRaceMusic } from "../modules/audio";
 import { createCursor } from "../modules/cursor";
 import { parse3DM } from "../modules/3dm";
 import { parseIL } from "../modules/il";
@@ -8,6 +8,7 @@ import { parseLAP } from "../modules/lap";
 import { createCar } from "../modules/car";
 import { createOriginalClock, ORIGINAL_TICK_MS, resolveOriginalCarContacts } from "../modules/originalPhysics.js";
 import { createOriginalCarEffects } from "../modules/originalCarEffects.js";
+import { getGhostFrame, loadGhost, recordReplayFrame, saveGhost, updateGhostSprite } from "../modules/ghost.js";
 import { advanceOriginalRoute, createOriginalAiState, getOriginalRoadContext, stepOriginalAi } from "../modules/originalAi.js";
 import {
 	advanceOriginalChampionship, createOriginalRacerProgress, getOriginalGridSlots, getOriginalRaceSettings, getOriginalStartingGrid, getOriginalStartLights,
@@ -93,7 +94,7 @@ export default class Race extends Phaser.Scene {
 		const mapTextures3D = "TEXTURY.PKG"; // TODO set according to map
 		const mapTexturesSP1 = "ONIKY.FSF"; // TODO set according to map
 		const mapTexturesSP2 = "DIVACI.FSF";
-		const tiles = scene.tilemap.addTilesetImage(mapTextures);
+		const tiles = scene.tilemap.addTilesetImage(mapTextures, mapTextures, scene.tileSize, scene.tileSize, 1, 2);
 		const layer = scene.tilemap.createLayer(0, tiles, 0, 0);
 
 		for (const e of scene.additionalSprites1Entries) {
@@ -127,18 +128,38 @@ export default class Race extends Phaser.Scene {
 			return car;
 		});
 		scene.playerCar = scene.cars.find((car) => car.isPlayer);
+		scene.ghost = null;
+		scene.ghostTick = 0;
+		scene.replayFrames = [];
+		if (scene.registry.get("currentRaceType") === "ghostRace") {
+			const map = scene.registry.get("currentMap") + 1;
+			const name = `T${String(map).padStart(2, "0")}_04`;
+			let storage = null;
+			try { storage = window.localStorage; } catch {}
+			scene.ghost = loadGhost(storage, map, scene.cache.binary.get(name + ".GHO"), scene.cache.binary.get(name + ".TRR"));
+			scene.ghost.map = map;
+			const firstFrame = getGhostFrame(scene.ghost, 0);
+			scene.ghostSprite = scene.add.image(firstFrame.x, firstFrame.y,
+				"TRABANT.FSF", scene.ghost.team * 4).setDepth(9).setAlpha(0.45);
+			scene.ghostSprite.name = "ghostCar";
+			updateGhostSprite(scene.ghostSprite, firstFrame);
+		}
 		scene.originalClock = createOriginalClock();
 		scene.physicsBackend = null;
-		scene.physicsLabel = scene.add.text(632, 8, "", {
-			fontFamily: "monospace", fontSize: "12px", color: "#ffffff",
-			backgroundColor: "#202020", padding: { x: 4, y: 2 }
-		})
-			.setOrigin(1, 0).setScrollFactor(0).setDepth(100000);
-		scene.setPhysicsBackend(scene.registry.get("physicsBackend") ?? "original");
+		scene.setPhysicsBackend(debugging ? scene.registry.get("physicsBackend") ?? "original" : "original");
+		setRaceMusic(scene);
+		scene.raceAudio = createRaceAudio(scene);
+		const changeMusic = (event) => {
+			if (!event.repeat && ["+", "=", "-"].includes(event.key)) {
+				playMusicTrack(scene, nextMusicTrack(scene.registry.get("musicTrack"), event.key === "-" ? -1 : 1));
+			}
+		};
+		scene.input.keyboard.on("keydown", changeMusic);
+		scene.events.once("shutdown", () => scene.input.keyboard.off("keydown", changeMusic));
 		const togglePhysics = (event) => {
 			if (!event.repeat) scene.setPhysicsBackend(scene.physicsBackend === "original" ? "box2d" : "original");
 		};
-		scene.input.keyboard.on("keydown-P", togglePhysics);
+		if (debugging) scene.input.keyboard.on("keydown-P", togglePhysics);
 		scene.events.once("shutdown", () => {
 			scene.input.keyboard.off("keydown-P", togglePhysics);
 			scene.originalClock.reset();
@@ -204,7 +225,6 @@ export default class Race extends Phaser.Scene {
 		for (const car of this.cars) car.updateDamage();
 		this.registry.set("physicsBackend", backend);
 		this.originalClock.reset();
-		this.physicsLabel.setText(backend === "original" ? "Original (experimental)" : "Box2D");
 	}
 
 	stepRacers() {
@@ -279,12 +299,19 @@ export default class Race extends Phaser.Scene {
 	finishRace(ranking) {
 		if (this.raceOver || this.finishing) return;
 		this.finishing = true;
+		if (this.ghost && this.playerCar.raceProgress.finished) {
+			try {
+				saveGhost(window.localStorage, this.ghost.map, this.ghost, this.playerCar.raceProgress.finishTime,
+					this.registry.get("playerName") ?? "Novy hrac", this.playerCar.team, this.replayFrames);
+			} catch (error) { console.warn("Ghost record was not saved", error); }
+		}
 		if (this.physicsBackend === "original" && !this.raceSettings.training) {
 			for (let tick = 0; tick < 7200 && this.cars.some((car) => !car.raceProgress.finished); tick++) this.stepOriginalTick();
 			ranking = rankOriginalRacers(this.cars.map((car) => ({ team: car.team, progress: car.raceProgress })));
 		}
 		this.raceOver = true;
 		this.timerRunning = false;
+		this.raceAudio.destroy();
 		const results = ranking.map(({ team, progress }, index) => ({
 			team, position: index + 1, finishTime: progress.finishTime, bestLap: progress.bestLap
 		}));
@@ -311,18 +338,30 @@ export default class Race extends Phaser.Scene {
 			this.timerRunning = true;
 			this.events.emit("raceStarted");
 		}
+		if (!this.timerRunning) {
+			this.raceAudio.step(this.playerCar.originalPhysics.snapshot(), {}, this.playerCar.originalPhysics.parameters.maxSpeed);
+		}
 		return this.timerRunning;
 	}
 
 	stepOriginalTick() {
 		if (!this.stepCountdown()) return;
+		this.stepGhost();
 		this.stepRacers();
 		for (const car of this.cars) car.stepOriginalPhysics();
 		resolveOriginalCarContacts(this.cars.map((car) => car.originalPhysics.state));
 		for (const car of this.cars) car.originalPhysics.syncTransform();
 		updateB2worldStepAndCollisions(this, ORIGINAL_TICK_MS, true);
 		for (const car of this.cars) car.syncOriginalPhysics();
+		this.raceAudio.step(this.playerCar.originalPhysics.snapshot(), this.playerCar.readControls(), this.playerCar.originalPhysics.parameters.maxSpeed);
 		this.updateRaceProgress();
+	}
+
+	stepGhost() {
+		if (!this.ghost || this.raceOver || this.playerCar.raceProgress.finished) return;
+		const frame = getGhostFrame(this.ghost, this.ghostTick++);
+		updateGhostSprite(this.ghostSprite, frame);
+		this.replayFrames.push(recordReplayFrame(this.playerCar.originalPhysics.snapshot(), this.playerCar.readControls()));
 	}
 
 	update(time, delta) {
@@ -333,8 +372,10 @@ export default class Race extends Phaser.Scene {
 			if (scene.timerRunning) updateB2worldStepAndCollisions(scene, delta);
 			scene.originalClock.advance(delta, () => {
 				if (!scene.stepCountdown()) return;
+				scene.stepGhost();
 				scene.stepRacers();
 				for (const car of scene.cars) car.originalPhysics.stepBoxEffects(car.readControls());
+				scene.raceAudio.step(scene.playerCar.originalPhysics.snapshot(), scene.playerCar.readControls(), scene.playerCar.originalPhysics.parameters.maxSpeed);
 				scene.updateRaceProgress();
 			});
 		}

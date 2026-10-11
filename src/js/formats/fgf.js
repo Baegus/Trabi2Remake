@@ -24,7 +24,8 @@ class FGFFile extends Phaser.Loader.FileTypes.BinaryFile {
 			rowHeight,
 			transparent: !isFGF,
 			transparentColor: /^(DYM[12]|POS)\.FSF$/i.test(this.key) ? 0xffff : 0,
-			paddingPerFrame: 4
+			paddingPerFrame: 4,
+			framePadding: isFGF ? 0 : 1
 		});
 	}
 
@@ -37,7 +38,10 @@ class FGFFile extends Phaser.Loader.FileTypes.BinaryFile {
 		} else {
 			await this.loader.textureManager.addSpriteSheet(this.key, decoded.image, {
 				frameWidth: decoded.frameWidth,
-				frameHeight: decoded.frameHeight
+				frameHeight: decoded.frameHeight,
+				endFrame: decoded.frameCount - 1,
+				margin: decoded.framePadding,
+				spacing: decoded.framePadding * 2
 			});
 		}
 

@@ -19,16 +19,17 @@ export const loadBitmapFonts = async (scene) => {
 	const grayCount = charsGray.length;
 
 	const srcTexture = scene.textures.get("FONT.FSF");
-	const srcImage = srcTexture.getSourceImage();
 
 	// Helper to create a texture from a slice of the source image
-	const makeFontFromSlice = async (key, srcY, count, chars) => {
+	const makeFontFromSlice = async (key, firstFrame, count, chars) => {
 		const canvas = document.createElement("canvas");
 		canvas.width = charW;
 		canvas.height = charH * count;
 		const ctx = canvas.getContext("2d");
-		// sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
-		ctx.drawImage(srcImage, 0, srcY, charW, charH * count, 0, 0, charW, charH * count);
+		for (let index = 0; index < count; index++) {
+			const frame = srcTexture.get(firstFrame + index);
+			ctx.drawImage(frame.source.image, frame.cutX, frame.cutY, charW, charH, 0, index * charH, charW, charH);
+		}
 
 		// Special-case: for the red HUD font, shift ':' and '.' 1px to the left
 		if (key === "HUDFontRed") {
@@ -68,5 +69,5 @@ export const loadBitmapFonts = async (scene) => {
 
 	scene.cache.bitmapFont.add("systemFont", Phaser.GameObjects.RetroFont.Parse(scene, systemFontConfig));
 	makeFontFromSlice("HUDFontRed", 0, redCount, charsRed);
-	makeFontFromSlice("HUDFontGray", charH * redCount, grayCount, charsGray);
+	makeFontFromSlice("HUDFontGray", redCount, grayCount, charsGray);
 }

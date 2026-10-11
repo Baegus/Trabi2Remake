@@ -20,9 +20,32 @@ export function parseMenuLayout(data) {
 	const buttonCount = view.getUint8(offset++);
 	const buttons = Array.from({ length: buttonCount }, () => {
 		const button = { ...readPosition(), texture: readString() };
-		view.getUint32(offset, true);
-		offset += 4;
 		return button;
+	});
+	const switches = Array.from({ length: view.getUint8(offset++) }, () => {
+		const position = readPosition();
+		const value = view.getUint8(offset++);
+		return { ...position, value, texture: readString() };
+	});
+	const sliders = Array.from({ length: view.getUint8(offset++) }, () => {
+		const position = readPosition();
+		const value = view.getUint8(offset++);
+		const width = view.getUint16(offset, true);
+		offset += 2;
+		return { ...position, value, width, texture: readString() };
+	});
+	const images = Array.from({ length: view.getUint8(offset++) }, () => {
+		const position = readPosition();
+		const frame = view.getUint8(offset++);
+		return { ...position, frame, texture: readString() };
+	});
+	const inputs = Array.from({ length: view.getUint8(offset++) }, () => {
+		const position = readPosition();
+		const maxLength = view.getUint8(offset++);
+		const text = readString();
+		view.getUint8(offset + 2);
+		offset += 3;
+		return { ...position, maxLength, text };
 	});
 	const textCount = view.getUint8(offset++);
 	const textPositions = Array.from({ length: textCount }, () => {
@@ -31,5 +54,5 @@ export function parseMenuLayout(data) {
 		offset += 3;
 		return position;
 	});
-	return { background, cursor, tooltips, buttons, textPositions };
+	return { background, cursor, tooltips, buttons, switches, sliders, images, inputs, textPositions };
 }

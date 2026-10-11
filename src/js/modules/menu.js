@@ -1,6 +1,8 @@
 import { makeClickable } from "./utils";
+import { playSound, setMenuMusic } from "./audio.js";
 
 const createMenuButton = (scene,customConfig) => {
+	setMenuMusic(scene);
 	const config = {
 		x: customConfig.x || 0,
 		y: customConfig.y || 0,
@@ -19,6 +21,7 @@ const createMenuButton = (scene,customConfig) => {
 	makeClickable(item);
 	if (config.alphaToggle == false) item.setAlpha(1);
 	item.on("pointerover",() => {
+		playSound(scene, "MENU.SND-KLIK1", { global: true });
 		item.setAlpha(1);
 		if (hasTooltip) {
 			config.tooltipObject.setFrame(config.tooltipFrame);
@@ -38,6 +41,7 @@ const createMenuButton = (scene,customConfig) => {
 		}
 	});
 	item.on("click",() => {
+		playSound(scene, "MENU.SND-KLIK2", { global: true });
 		config.clickCallback();
 	});
 	return item;

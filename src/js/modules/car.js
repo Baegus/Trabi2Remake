@@ -16,6 +16,7 @@ import { assignB2BodyBox } from "../modules/box2dUtils.js";
 import { getTransmissionStats, getParKeyForDifficulty } from "./carParams.js";
 import { createOriginalCarController } from "./originalCar.js";
 import { getOriginalDamageFrame } from "./originalPhysics.js";
+import { ORIGINAL_GHOST_SETTINGS } from "./ghost.js";
 
 const clampTransmission = (v) => Phaser.Math.Clamp(v, 0, 21);
 
@@ -198,9 +199,10 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 
 	// Load variables from registry with defaults
 	const difficulty = scene.registry.get("difficulty") ?? 1;
-	const transmission = scene.registry.get("transmissionVal") ?? 0; // 0-21; 0 means fast accel and lowest top speed and vice versa
-	const brakesVal = scene.registry.get("brakesVal") ?? 0; // 0-21; 0 means strong brakes with short stopping distance and vice versa
-	const tiresVal = scene.registry.get("tiresVal") ?? 0; // 0-2; tires only seem to affect handbrake turns - 2 has best grip, spins out the least
+	const ghostRace = scene.registry.get("currentRaceType") === "ghostRace";
+	const transmission = ghostRace ? ORIGINAL_GHOST_SETTINGS.transmission : scene.registry.get("transmissionVal") ?? 0;
+	const brakesVal = ghostRace ? ORIGINAL_GHOST_SETTINGS.brakes : scene.registry.get("brakesVal") ?? 0;
+	const tiresVal = ghostRace ? ORIGINAL_GHOST_SETTINGS.tires : scene.registry.get("tiresVal") ?? 0;
 
 	// All cars use the same PAR file based on difficulty (Easy→PAR1, Medium→PAR3, Hard→PAR5).
 	// Car type modifiers (hardcoded in the original EXE) differentiate opponent stats.
