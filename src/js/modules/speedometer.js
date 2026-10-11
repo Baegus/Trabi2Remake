@@ -13,8 +13,16 @@ export const createSpeedometer = (scene, x, y) => {
 
 	const lapText = scene.add.bitmapText(x + 22, y + 27, "HUDFontGray", "1/5").setDepth(100);
 	const positionText = scene.add.bitmapText(x + 33, y + 109, "HUDFontGray", "1").setDepth(100);
+	const race = scene.scene.get("race");
+	lapText.setText(`1/${race.raceSettings.laps}`);
+	positionText.setText(String(race.playerCar.gridPosition));
+	const updateProgress = ({ lap, laps, position }) => {
+		lapText.setText(`${lap}/${laps}`);
+		positionText.setText(String(position));
+	};
+	scene.events.on("raceProgress", updateProgress);
 
-	scene.events.on("playerCarUpdate", (event) => {
+	const updatePlayer = (event) => {
 		const speedKPH = event.speedKPH;
 		if (debugging) {
 			window.speedDebugText.setText(`${speedKPH} km/h`);
@@ -23,6 +31,11 @@ export const createSpeedometer = (scene, x, y) => {
 		const rawAngle = (speedKPH / maxSpeedKPH) * angleRange + angleOffset;
 		const needleAngle = Phaser.Math.Clamp(rawAngle, angleOffset, angleOffset + angleRange);
 		needle.setRotation(Phaser.Math.DegToRad(needleAngle));
+	};
+	scene.events.on("playerCarUpdate", updatePlayer);
+	scene.events.once("shutdown", () => {
+		scene.events.off("raceProgress", updateProgress);
+		scene.events.off("playerCarUpdate", updatePlayer);
 	});
 
 	return speedometer;

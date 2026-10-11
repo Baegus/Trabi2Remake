@@ -14,6 +14,8 @@ import {
 } from "phaser-box2d/dist/PhaserBox2D.js";
 import { assignB2BodyBox } from "../modules/box2dUtils.js";
 import { getTransmissionStats, getParKeyForDifficulty } from "./carParams.js";
+import { createOriginalCarController } from "./originalCar.js";
+import { getOriginalDamageFrame } from "./originalPhysics.js";
 
 const clampTransmission = (v) => Phaser.Math.Clamp(v, 0, 21);
 
@@ -151,6 +153,7 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	car.team = team;
 	car.damage = [0, 0, 0, 0]; // topLeft, topRight, bottomLeft, bottomRight
 	const dmgToFrame = (n) => {
+		if (scene.physicsBackend === "original") return getOriginalDamageFrame(n);
 		const clamped = Math.max(0, Math.min(100, n));
 		return Math.min(3, Math.floor(clamped / 25));
 	};
@@ -162,7 +165,10 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		this.bottomLeft.setFrame(this.team * 4 + dmgToFrame(this.damage[2]));
 		this.bottomRight.setFrame(this.team * 4 + dmgToFrame(this.damage[3]));
 		if (hudScene && isPlayer) {
-			hudScene.events.emit("carDamage", { damageState: this.damage });
+			hudScene.events.emit("carDamage", {
+				damageState: this.damage,
+				damageFrames: scene.physicsBackend === "original" ? this.damage.map(getOriginalDamageFrame) : undefined
+			});
 		}
 	};
 	car.updateDamage();
@@ -203,6 +209,22 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	const carType = isPlayer ? 4 : team;
 	const parData = scene.cache.binary.get(parKey);
 	const stats = getTransmissionStats(parData, difficulty, transmission, carType);
+	car.aiControls = {};
+	car.readControls = () => !scene.timerRunning || car.originalPhysics.state.pitTicks > 0 ? {} : !isPlayer || car.raceProgress?.finished ? car.aiControls : {
+		left: cursors.left.isDown || keys.A.isDown,
+		right: cursors.right.isDown || keys.D.isDown,
+		throttle: cursors.up.isDown || keys.W.isDown,
+		brake: cursors.down.isDown || keys.S.isDown,
+		handbrake: cursors.space.isDown || keys.SPACE.isDown
+	};
+	car.originalPhysics = createOriginalCarController(car, parData, {
+		transmission: isPlayer ? transmission : 10, brakes: isPlayer ? brakesVal : 10, tires: isPlayer ? tiresVal : 1
+	});
+	car.stepOriginalPhysics = () => car.originalPhysics.beforeStep(car.readControls());
+	car.syncOriginalPhysics = () => {
+		const speedKPH = car.originalPhysics.afterStep();
+		if (hudScene && isPlayer) hudScene.events.emit("playerCarUpdate", { speedKPH: Math.round(speedKPH) });
+	};
 
 	const transmissionProfile = buildTransmissionProfile(stats, transmission);
 	const maxSpeedKph = transmissionProfile.topKph;
@@ -213,6 +235,7 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 
 	// Vehicle Control Update loop
 	car.updateRef = (time, delta) => {
+		if (scene.physicsBackend === "original") return;
 		if (!car.body || !b2Body_IsValid(car.body.bodyId)) return;
 		const bodyId = car.body.bodyId;
 		const dt = Math.min(delta / 1000, 0.1);
@@ -230,10 +253,11 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 		const lateralVelocityMag = velocity.x * right.x + velocity.y * right.y;
 
 		// Input evaluation
-		let isAccelerating = cursors.up.isDown || keys.W.isDown;
-		const isBraking = cursors.down.isDown || keys.S.isDown;
-		const steerInput = (cursors.left.isDown || keys.A.isDown ? 1 : 0) + (cursors.right.isDown || keys.D.isDown ? -1 : 0);
-		const isHandbraking = cursors.space.isDown || keys.SPACE.isDown;
+		const controls = car.readControls();
+		let isAccelerating = controls.throttle;
+		const isBraking = controls.brake;
+		const steerInput = (controls.left ? 1 : 0) + (controls.right ? -1 : 0);
+		const isHandbraking = controls.handbrake;
 
 		if (isHandbraking) {
 			isAccelerating = false; // Completely kill gas/throttle

@@ -23,6 +23,7 @@ class FGFFile extends Phaser.Loader.FileTypes.BinaryFile {
 			rowWidth,
 			rowHeight,
 			transparent: !isFGF,
+			transparentColor: /^(DYM[12]|POS)\.FSF$/i.test(this.key) ? 0xffff : 0,
 			paddingPerFrame: 4
 		});
 	}

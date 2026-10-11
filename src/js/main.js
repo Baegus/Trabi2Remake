@@ -11,6 +11,7 @@ import SaveMenu from "./scenes/Menus/SaveMenu"
 import CreditsMenu from "./scenes/Menus/CreditsMenu"
 import SinglePlayerMenu from "./scenes/Menus/SinglePlayerMenu"
 import RaceMenu from "./scenes/Menus/RaceMenu"
+import RaceResultsMenu from "./scenes/Menus/RaceResultsMenu.js"
 import CarSettingsMenu from "./scenes/Menus/CarSettingsMenu"
 import OutroMenu from "./scenes/Menus/OutroMenu"
 import Race from "./scenes/Race"
@@ -52,6 +53,7 @@ const config = {
 		MainMenu,
 		SinglePlayerMenu,
 		RaceMenu,
+		RaceResultsMenu,
 		OptionsMenu,
 		CarSettingsMenu,
 		CreditsMenu,

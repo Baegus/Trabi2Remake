@@ -17,24 +17,23 @@ export default class Preloader extends Phaser.Scene {
 		// Load maps:
 		const mapCount = 10;
 		for (let i = 1; i <= mapCount; i++) {
-			const filename = `Trat${i.toString().padStart(2, "0")}.map`;
-			const filenameUpper = filename.toUpperCase();
+			const filename = `TRAT${i.toString().padStart(2, "0")}.MAP`;
 			// 3DM files (model placements):
-			const modelPlacementFilename = filenameUpper.replace(".MAP", ".3DM");
+			const modelPlacementFilename = filename.replace(".MAP", ".3DM");
 			scene.load.binary(filename, `trabi2data/${filename}`, Uint8Array);
 			scene.load.binary(modelPlacementFilename, `trabi2data/${modelPlacementFilename}`, Uint8Array);
 			// IL1/IL2 files (AI node definitions):
-			const il1Filename = filename.replace(".map", ".il1");
-			const il2Filename = filename.replace(".map", ".il2");
+			const il1Filename = filename.replace(".MAP", ".IL1");
+			const il2Filename = filename.replace(".MAP", ".IL2");
 			scene.load.binary(il1Filename, `trabi2data/${il1Filename}`, Uint8Array);
 			scene.load.binary(il2Filename, `trabi2data/${il2Filename}`, Uint8Array);
 			// SP1/SP2 files (additional sprite positions, from ONIKY.FSF and DIVACI.FSF):
-			const sp1Filename = filename.replace(".map", ".sp1");
-			const sp2Filename = filename.replace(".map", ".sp2");
+			const sp1Filename = filename.replace(".MAP", ".SP1");
+			const sp2Filename = filename.replace(".MAP", ".SP2");
 			scene.load.binary(sp1Filename, `trabi2data/${sp1Filename}`, Uint8Array);
 			scene.load.binary(sp2Filename, `trabi2data/${sp2Filename}`, Uint8Array);
 			 // LAP files (track point definitions):
-			const lapFilename = filename.replace(".map", ".lap");
+			const lapFilename = filename.replace(".MAP", ".LAP");
 			scene.load.binary(lapFilename, `trabi2data/${lapFilename}`, Uint8Array);
 		}
 
@@ -121,14 +120,22 @@ export default class Preloader extends Phaser.Scene {
 			"ONIKY.FSF",   // sprites with positions defined in SP1 files
 			"ONIKY2.FSF",   // winter sprites with positions defined in SP1 files
 			"DIVACI.FSF",  // spectator sprites with positions defined in SP2 files
+			"SIPKA.FSF",   // on-road arrow showing where the repair depot is
 
 			// CAR SPRITES:
 			"TRABANT.FSF", // all Trabant sprites
 
+			// PARTICLES:
+			"DYM1.FSF", // car exhaust smoke - less damage
+			"DYM2.FSF", // car exhaust smoke - more damage
+			"STOPY.FSF", // tire skid particles
+			
 			// HUD:
 			"FONT.FSF",   // number font (red + gray)
 			"TACHO.FSF", // speedometer
 			"OBRYSY.FSF", // car damage indicators
+			"SEMAFOR.FSF", // countdown traffic light
+			"POS.FSF",     // finished position graphics
 
 			// IN-GAME PAUSE MENU:
 			"VNITREK.FSF", // background image, semi-opaque
@@ -137,7 +144,10 @@ export default class Preloader extends Phaser.Scene {
 			"ICO2.FSF",    // exit to menu option
 			"ICO3.FSF",    // CD volume bar
 
-
+			// RACE RESULT / STANDINGS MENU:
+			"KLASIF.FGF", // background image
+			"OK3.FSF",
+			
 			// OUTRO:
 			"OUTRO.FGF", // background image
 
@@ -145,6 +155,7 @@ export default class Preloader extends Phaser.Scene {
 		originalGraphicsFiles.forEach((filename) => {
 			scene.load.fsf(filename,`trabi2data/${filename}`);
 		});
+		scene.load.binary("KLASIF.MNU", "trabi2data/KLASIF.MNU", Uint8Array);
 
 		// Load texture PKGs:
 		const texturePackages = [
@@ -215,7 +226,7 @@ export default class Preloader extends Phaser.Scene {
 		scene.registry.set("mapOrder",[7,8,1,5,6,9,4,3,10,2]);
 
 		scene.registry.set("soundEnabled", true);
-		scene.registry.set("dynamicScreenEnabled", true);
+		scene.registry.set("dynamicScreenEnabled", false);
 		scene.registry.set("musicVolume", 3);
 		scene.registry.set("CDVolume", 0);
 		
@@ -229,10 +240,10 @@ export default class Preloader extends Phaser.Scene {
 
 		loadBitmapFonts(scene);
 
-		// scene.scene.start("mainMenu"); // DEBUG MAIN MENU
+		scene.scene.start("mainMenu"); // DEBUG MAIN MENU
 		// scene.scene.start("singlePlayer"); // DEBUG SINGLEPLAYER MENU
 		// scene.scene.start("optionsMenu"); // DEBUG OPTIONS MENU
-		scene.scene.start("saveMenu"); // DEBUG SAVE MENU
+		// scene.scene.start("saveMenu"); // DEBUG SAVE MENU
 		// scene.scene.start("carSettingsMenu"); // DEBUG CAR SETTINGS MENU
 		// scene.scene.start("raceMenu"); // DEBUG RACE MENU
 		// scene.scene.start("race"); // DEBUG RACE

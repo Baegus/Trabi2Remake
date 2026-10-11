@@ -1,4 +1,5 @@
 import { b2Body_GetUserData, RemoveSpriteFromWorld, b2Body_IsValid, b2Shape_GetBody, b2World_GetContactEvents, UpdateWorldSprites, WorldStep, b2DefaultBodyDef, b2DefaultWorldDef, CreateWorld, CreateBoxPolygon, STATIC, pxmVec2, b2Vec2, pxm, b2Body_SetUserData, DYNAMIC, SpriteToCircle, SpriteToBox, AddSpriteToWorld, b2DestroyBody } from "phaser-box2d/dist/PhaserBox2D.js";
+import { b2World_Step } from "phaser-box2d/dist/PhaserBox2D.js";
 
 /**
  * Creates a Box2D world. The world will be accessible in the scene object.
@@ -21,9 +22,10 @@ export function createB2World(scene, options) {
  * @param {*} scene current scene
  * @param {Number} delta time since last update
  */
-export function updateB2worldStepAndCollisions(scene, delta) {
+export function updateB2worldStepAndCollisions(scene, delta, fixedStep = false) {
 	const worldId = scene.world.worldId;
-	WorldStep({ worldId, deltaTime: delta * 0.001 });
+	if (fixedStep) b2World_Step(worldId, delta / 1000, 4);
+	else WorldStep({ worldId, deltaTime: delta * 0.001 });
 	UpdateWorldSprites(worldId);
 	checkB2CollisionBeginEvents(scene);
 	checkB2CollisionEndEvents(scene);

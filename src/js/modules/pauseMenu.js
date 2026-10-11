@@ -32,9 +32,10 @@ export const createPauseMenu = (scene) => {
 	menuContainer.add(exitToMenuButton);
 	exitToMenuButton.action = () => {
 		const raceScene = scene.scene.get("race");
-		raceScene.scene.start("raceMenu");
-		toggleMenu();
+		menuContainer.setVisible(false);
 		scene.events.emit("hideHUD");
+		const training = raceScene.exitTraining?.();
+		raceScene.scene.start(training ? "raceResultsMenu" : "raceMenu");
 	};
 
 	menuItems.push(exitToMenuButton);
@@ -57,22 +58,27 @@ export const createPauseMenu = (scene) => {
 		activate(newIndex);
 	}
 
-	scene.input.keyboard.on("keydown-ESC", () => {
+	const onEscape = () => {
 		toggleMenu();
-	});
+	};
 
-	scene.input.keyboard.on("keydown-ENTER", () => {
+	const onEnter = () => {
 		if (!menuContainer.visible) return;
 		menuItems[activeItem].action();
-	});
+	};
 
-	scene.input.keyboard.on("keydown-DOWN", () => {
+	const onDown = () => {
 		if (!menuContainer.visible) return;
 		select(1);
-	});
-	scene.input.keyboard.on("keydown-UP", () => {
+	};
+	const onUp = () => {
 		if (!menuContainer.visible) return;
 		select(-1);
+	};
+	const handlers = [["keydown-ESC", onEscape], ["keydown-ENTER", onEnter], ["keydown-DOWN", onDown], ["keydown-UP", onUp]];
+	for (const [event, handler] of handlers) scene.input.keyboard.on(event, handler);
+	scene.events.once("shutdown", () => {
+		for (const [event, handler] of handlers) scene.input.keyboard.off(event, handler);
 	});
 
 	return menuContainer;

@@ -1,6 +1,7 @@
 import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
+import { createOriginalChampionship } from "../../modules/originalRace.js";
 
 const debugging = process.env.DEBUG == "true";
 
@@ -34,6 +35,12 @@ export default class SinglePlayerMenu extends Phaser.Scene {
 
 		const selectRaceType = (type) => {
 			scene.registry.set("currentRaceType",type);
+			scene.registry.set("currentMap", 0);
+			scene.registry.set("lastRaceResults", []);
+			scene.registry.set("championship", type === "championship"
+				? createOriginalChampionship(scene.registry.get("playerTeam") ?? 0) : null);
+			scene.registry.set("raceLaps", type === "ghostRace" ? 4 : 12);
+			scene.registry.set("raceOpponents", type === "ghostRace" ? 0 : 5);
 			scene.scene.start("raceMenu");
 		}
 		const championshipButton = createMenuButton(scene,{

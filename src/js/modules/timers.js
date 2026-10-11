@@ -54,8 +54,8 @@ export const createTimers = (scene, x, y) => {
 	});
 
 	const raceScene = scene.scene.get("race");
-	raceScene.events.on("raceStarted", () => {
-		raceScene.time.addEvent({
+	const startTimer = () => {
+		scene.time.addEvent({
 			delay: 10,
 			loop: true,
 			callback: () => {
@@ -63,7 +63,9 @@ export const createTimers = (scene, x, y) => {
 				setTimeText(lapTimeText, raceScene.currentLapTime);
 			}
 		});
-	});
+	};
+	raceScene.events.on("raceStarted", startTimer);
+	scene.events.once("shutdown", () => raceScene.events.off("raceStarted", startTimer));
 
 	/*
 	// Example lapCompleted trigger:

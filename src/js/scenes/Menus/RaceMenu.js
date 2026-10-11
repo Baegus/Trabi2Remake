@@ -2,6 +2,7 @@ import { playSound } from "../../modules/audio";
 import { createCursor } from "../../modules/cursor";
 import { createMenuButton } from "../../modules/menu";
 import { createTextInput } from "../../modules/textInput";
+import { getOriginalRaceSettings } from "../../modules/originalRace.js";
 
 const debugging = process.env.DEBUG == "true";
 
@@ -27,11 +28,17 @@ export default class RaceMenu extends Phaser.Scene {
 		const defaultPlayerName = "Novy hrac";
 		const defaultTeam = 0;
 		const defaultMap = 0;
+		const championship = currentRaceType === "championship" ? scene.registry.get("championship") : null;
+		const settings = () => getOriginalRaceSettings({ mode: currentRaceType, championship,
+			laps: scene.registry.get("raceLaps") ?? 12, opponents: scene.registry.get("raceOpponents") ?? 5 });
 
 		// TODO: If game is loaded/in progress, load actual values from registry here:
 		let playerName = scene.registry.get("playerName") || defaultPlayerName;
-		let team = defaultTeam;
-		let map = defaultMap;
+		let team = scene.registry.get("playerTeam") ?? defaultTeam;
+		let map = championship?.track ?? scene.registry.get("currentMap") ?? defaultMap;
+		if (championship) {
+			scene.add.bitmapText(400, 45, "systemFont", championship.phase === "training" ? "Trenink" : "Zavod").setOrigin(0, 0);
+		}
 
 
 
@@ -40,7 +47,7 @@ export default class RaceMenu extends Phaser.Scene {
 		const teamThumbnails = scene.add.image(148,46,"TYMY.FSF").setOrigin(0,0);
 		const totalTeams = scene.registry.get("totalTeams");
 		const lastTeam = totalTeams-1;
-		const teamsLocked = false; // TODO: set according to current cirmustances
+		const teamsLocked = Boolean(championship && (championship.track > 0 || championship.phase === "race"));
 		const setTeam = (offset=1,forceValue=false) => {
 			if (teamsLocked && !forceValue) return;
 			let selectedTeam = team+offset;
@@ -48,6 +55,8 @@ export default class RaceMenu extends Phaser.Scene {
 			if (selectedTeam > lastTeam) return;
 			if (selectedTeam < 0) return;
 			team = selectedTeam;
+			scene.registry.set("playerTeam", team);
+			if (championship) championship.team = team;
 			const frame = teamsLocked ? selectedTeam+totalTeams : selectedTeam;
 			teamThumbnails.setFrame(frame);
 		};
@@ -120,6 +129,7 @@ export default class RaceMenu extends Phaser.Scene {
 
 		const diffButtons = [easyDiffButton, mediumDiffButton, hardDiffButton];
 		const setDiff = (val) => {
+			if (championship?.track > 0) val = scene.registry.get("difficulty");
 			scene.registry.set("difficulty", val);
 			diffButtons.forEach((btn, i) => {
 				btn.setFrame(i === val ? 1 : 0);
@@ -135,7 +145,7 @@ export default class RaceMenu extends Phaser.Scene {
 		const mapThumbnails = scene.add.image(404,91,"TRATE.FSF").setOrigin(0,0);
 		const totalMaps = scene.registry.get("totalMaps");
 		const lastMap = totalMaps-1;
-		const mapsLocked = false; // TODO: set according to current cirmustances
+		const mapsLocked = Boolean(championship);
 		const setMap = (offset=1,forceValue=false) => {
 			if (mapsLocked && !forceValue) return;
 			let selectedMap = map+offset;
@@ -171,14 +181,21 @@ export default class RaceMenu extends Phaser.Scene {
 			y: 221,
 			texture: "HVEZDA1.FSF",
 			clickCallback: () => {
+				setLaps(-1);
 			}
 		});
-		const lapsText = scene.add.bitmapText(553, 227, "systemFont", "10").setOrigin(0,0);
+		const lapsText = scene.add.bitmapText(553, 227, "systemFont", String(settings().laps)).setOrigin(0,0);
+		const setLaps = (offset) => {
+			if (championship) return;
+			scene.registry.set("raceLaps", Math.max(1, Math.min(99, settings().laps + offset)));
+			lapsText.setText(String(settings().laps));
+		};
 		const moreLapsButton = createMenuButton(scene,{
 			x: 570,
 			y: 221,
 			texture: "HVEZDA2.FSF",
 			clickCallback: () => {
+				setLaps(1);
 			}
 		});
 		
@@ -187,14 +204,21 @@ export default class RaceMenu extends Phaser.Scene {
 			y: 250,
 			texture: "HVEZDA3.FSF",
 			clickCallback: () => {
+				setOpponents(-1);
 			}
 		});
-		const opponentsText = scene.add.bitmapText(556, 255, "systemFont", "0").setOrigin(0, 0);
+		const opponentsText = scene.add.bitmapText(556, 255, "systemFont", String(settings().opponents)).setOrigin(0, 0);
+		const setOpponents = (offset) => {
+			if (championship || currentRaceType === "ghostRace") return;
+			scene.registry.set("raceOpponents", Math.max(0, Math.min(5, settings().opponents + offset)));
+			opponentsText.setText(String(settings().opponents));
+		};
 		const moreOpponentsButton = createMenuButton(scene,{
 			x: 570,
 			y: 250,
 			texture: "HVEZDA4.FSF",
 			clickCallback: () => {
+				setOpponents(1);
 			}
 		});
 		// TODO: Display and set text values
@@ -226,6 +250,7 @@ export default class RaceMenu extends Phaser.Scene {
 			y: 396,
 			texture: "KLASIF.FSF",
 			clickCallback: () => {
+				scene.showStandings();
 			}
 		});
 
@@ -239,6 +264,18 @@ export default class RaceMenu extends Phaser.Scene {
 		});
 
 
+	}
+
+	showStandings() {
+		const latest = this.registry.get("lastRaceResults") ?? [];
+		const championship = this.registry.get("championship");
+		const totals = new Map();
+		for (const race of championship?.results ?? []) {
+			for (const result of race.results) totals.set(result.team, (totals.get(result.team) ?? 0) + (result.finishTime ?? Infinity));
+		}
+		const results = totals.size ? [...totals].map(([team, finishTime]) => ({ team, finishTime })) : [...latest];
+		results.sort((first, second) => (first.finishTime ?? Infinity) - (second.finishTime ?? Infinity));
+		this.scene.start("raceResultsMenu", { results, nextScene: "raceMenu" });
 	}
 		
 }

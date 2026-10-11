@@ -20,6 +20,7 @@ export function parseGraphics(data, config) {
 			rowWidth,
 			rowHeight,
 			transparent = false,
+			transparentColor = 0,
 			paddingPerFrame = 0
 		} = config;
 
@@ -50,7 +51,7 @@ export function parseGraphics(data, config) {
 						const greenValue = greenTable[greenIdx];
 						const blueValue = blueTable[blueIdx];
 
-						const isTransparent = transparent && (redValue + greenValue + blueValue) === 0;
+						const isTransparent = transparent && value === transparentColor;
 
 						// JS uses little-endian TypedArrays so format is ABGR locally
 						buf32[dataIndex++] = isTransparent ? 0 :

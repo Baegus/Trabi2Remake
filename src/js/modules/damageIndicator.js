@@ -47,6 +47,11 @@ export const createDamageIndicator = (scene, x, y) => {
 	damageIndicatorContainer.updateDamage();
 
 	scene.events.on("carDamage", (event) => {
+		if (Array.isArray(event.damageFrames)) {
+			damageIndicatorContainer.damage = event.damageFrames;
+			damageIndicatorContainer.updateDamage();
+			return;
+		}
 		const damageState = event.damageState;
 		// damageState expected to be an array of four numbers (percent 0..100) or direct frame indices (0..3)
 		if (!damageState || !Array.isArray(damageState)) return;
