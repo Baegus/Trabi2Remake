@@ -61,7 +61,7 @@ export default class HUD extends Phaser.Scene {
 			depotArrow.destroy();
 		});
 
-		const standingsText = scene.add.bitmapText(200, 460, "raceMessageFont", "", 8)
+		const standingsText = scene.add.bitmapText(200, 460, "systemFont", "", 8)
 			.setOrigin(0, 0).setDepth(100).setTint(0x000000);
 		standingsText.name = "lapStandingsMessage";
 		const updateStandings = () => {

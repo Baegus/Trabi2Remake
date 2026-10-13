@@ -21,39 +21,29 @@ export default class OptionsMenu extends Phaser.Scene {
 		const bg = scene.add.image(0, 0, "OPTIONS.FGF").setOrigin(0, 0);
 		const cursor = createCursor(scene);
 
-		const soundSwitch = createMenuButton(scene, {
-			x: 566,
-			y: 61,
-			texture: "SW4.FSF",
-			hoverTextureFrame: false,
-		});
-		soundSwitch.setAlpha(1);
 		let soundEnabled = scene.registry.get("soundEnabled");
-		if (!soundEnabled) soundSwitch.setFrame(1);
+		const soundSwitch = scene.add.image(566, 61, "SW4.FSF", soundEnabled ? 0 : 1).setOrigin(0, 0);
 		const soundTitle = createMenuButton(scene, {
 			x: 417,
 			y: 45,
 			texture: "NOISE.FSF",
 			clickCallback: () => {
-				soundSwitch.setFrame(soundSwitch.frame.name === 0 ? 1 : 0);
 				soundEnabled = !soundEnabled;
 				scene.registry.set("soundEnabled", soundEnabled);
+				soundSwitch.setFrame(soundEnabled ? 0 : 1);
 			}
 		});
 
-		const dynamicScreenSwitch = createMenuButton(scene, {
-			x: 565,
-			y: 295,
-			texture: "SW5.FSF",
-			hoverTextureFrame: false,
-		});
-		dynamicScreenSwitch.setAlpha(1);
+		let dynamicScreenEnabled = scene.registry.get("dynamicScreenEnabled");
+		const dynamicScreenSwitch = scene.add.image(565, 295, "SW5.FSF", dynamicScreenEnabled ? 0 : 1).setOrigin(0, 0);
 		const dynamicScreenTitle = createMenuButton(scene, {
 			x: 283,
 			y: 285,
 			texture: "DSCREEN.FSF",
 			clickCallback: () => {
-				dynamicScreenSwitch.setFrame(dynamicScreenSwitch.frame.name === 0 ? 1 : 0);
+				dynamicScreenEnabled = !dynamicScreenEnabled;
+				scene.registry.set("dynamicScreenEnabled", dynamicScreenEnabled);
+				dynamicScreenSwitch.setFrame(dynamicScreenEnabled ? 0 : 1);
 			}
 		});
 		

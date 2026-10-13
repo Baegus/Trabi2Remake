@@ -8,6 +8,7 @@ import { parseLAP } from "../modules/lap";
 import { createCar } from "../modules/car";
 import { createOriginalClock, ORIGINAL_TICK_MS, resolveOriginalCarContacts } from "../modules/originalPhysics.js";
 import { createOriginalCarEffects } from "../modules/originalCarEffects.js";
+import { createOriginalCameraState, getOriginalCameraCenter, stepOriginalCamera } from "../modules/originalCamera.js";
 import { getGhostFrame, loadGhost, recordReplayFrame, saveGhost, updateGhostSprite } from "../modules/ghost.js";
 import { advanceOriginalRoute, createOriginalAiState, getOriginalRoadContext, stepOriginalAi } from "../modules/originalAi.js";
 import {
@@ -155,6 +156,9 @@ export default class Race extends Phaser.Scene {
 		scene.originalClock = createOriginalClock();
 		scene.physicsBackend = null;
 		scene.setPhysicsBackend(debugging ? scene.registry.get("physicsBackend") ?? "original" : "original");
+		scene.cameraOffset = createOriginalCameraState();
+		scene.cameras.main.stopFollow();
+		scene.updateRaceCamera();
 		setRaceMusic(scene);
 		scene.raceAudio = createRaceAudio(scene);
 		const changeMusic = (event) => {
@@ -380,7 +384,20 @@ export default class Race extends Phaser.Scene {
 		updateB2worldStepAndCollisions(this, ORIGINAL_TICK_MS, true);
 		for (const car of this.cars) car.syncOriginalPhysics();
 		this.raceAudio.step(this.playerCar.originalPhysics.snapshot(), this.playerCar.readControls(), this.playerCar.originalPhysics.parameters.maxSpeed);
+		this.stepRaceCamera();
 		this.updateRaceProgress();
+	}
+
+	stepRaceCamera() {
+		const camera = this.cameras.main;
+		stepOriginalCamera(this.cameraOffset, this.playerCar.originalPhysics.snapshot(),
+			this.playerCar.originalPhysics.parameters.maxSpeed, camera.width / camera.zoom, camera.height / camera.zoom,
+			this.registry.get("dynamicScreenEnabled"));
+	}
+
+	updateRaceCamera() {
+		const center = getOriginalCameraCenter(this.cameraOffset, this.playerCar.originalPhysics.snapshot());
+		this.cameras.main.centerOn(center.x, center.y);
 	}
 
 	stepGhost() {
@@ -403,8 +420,10 @@ export default class Race extends Phaser.Scene {
 				scene.stepRacers();
 				for (const car of scene.cars) car.originalPhysics.stepBoxEffects(car.readControls());
 				scene.raceAudio.step(scene.playerCar.originalPhysics.snapshot(), scene.playerCar.readControls(), scene.playerCar.originalPhysics.parameters.maxSpeed);
+				scene.stepRaceCamera();
 				scene.updateRaceProgress();
 			});
 		}
+		scene.updateRaceCamera();
 	}
 }
