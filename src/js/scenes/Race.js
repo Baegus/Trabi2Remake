@@ -33,9 +33,10 @@ export default class Race extends Phaser.Scene {
 	preload() {
 		const scene = this;
 		const mapOrder = scene.registry.get("mapOrder");
-		const currentMap = mapOrder[scene.registry.get("currentMap")];
+		const currentMapID = scene.registry.get("currentMap");
+		const currentMap = mapOrder[currentMapID];
 		const currentMapFile = `TRAT${currentMap.toString().padStart(2, "0")}.MAP`;
-		console.log("Current map file:", currentMapFile);
+		scene.isWinter = scene.registry.get("winterMaps").includes(currentMap);
 		// Parse and make the main tilemap:
 		const binaryMapData = scene.cache.binary.get(currentMapFile);
 		const mapData = Array.from(binaryMapData.slice(2));
@@ -93,9 +94,11 @@ export default class Race extends Phaser.Scene {
 
 		const toPx = (tileUnits) => tileUnits * scene.tileSize;
 
-		const mapTextures = "POZ.FSF"; // TODO set according to map
-		const mapTextures3D = "TEXTURY.PKG"; // TODO set according to map
-		const mapTexturesSP1 = "ONIKY.FSF"; // TODO set according to map
+		console.log(scene.registry.get("currentMap"));
+		
+		const mapTextures = scene.isWinter ? "POZ2.FSF" : "POZ.FSF";
+		const mapTextures3D = scene.isWinter ? "TEXTURY2.PKG" : "TEXTURY.PKG";
+		const mapTexturesSP1 = scene.isWinter ? "ONIKY2.FSF" : "ONIKY.FSF";
 		const mapTexturesSP2 = "DIVACI.FSF";
 		const tiles = scene.tilemap.addTilesetImage(mapTextures, mapTextures, scene.tileSize, scene.tileSize, 1, 2);
 		const layer = scene.tilemap.createLayer(0, tiles, 0, 0);

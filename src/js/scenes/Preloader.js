@@ -230,6 +230,7 @@ export default class Preloader extends Phaser.Scene {
 		scene.registry.set("totalMaps",10);
 		 // For whatever reason, tracks are out of order:
 		scene.registry.set("mapOrder",[7,8,1,5,6,9,4,3,10,2]);
+		scene.registry.set("winterMaps", [8,9,4,10]);
 
 		scene.registry.set("soundEnabled", true);
 		scene.registry.set("dynamicScreenEnabled", false);
