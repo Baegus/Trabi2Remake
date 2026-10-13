@@ -7,7 +7,7 @@ export const loadBitmapFonts = async (scene) => {
 		width: 8,
 		height: 8,
 		charsPerRow: 67,
-		chars: `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz${numbers} -_:.`,
+		chars: `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz${numbers} -_:.()\x1e\x1f`,
 	};
 	// Create two HUD bitmap fonts (red and gray) from a single image that has
 	// one character per row: red characters first, then gray ones.

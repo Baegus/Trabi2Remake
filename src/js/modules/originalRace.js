@@ -14,6 +14,50 @@ export const ORIGINAL_RACERS = [
 	{ number: 11, name: "V.Bogatyrev" }
 ];
 
+export const ORIGINAL_STANDINGS_MESSAGE_TICKS = 300;
+
+export function formatOriginalStandingsMessage({ ahead, behind, gapTicks = 0, lapsBehind = 0, finished, training = false } = {}) {
+	if (training) return "Trenink muzete kdykoliv ukoncit klavesou ESC.";
+	if (finished) return `${finished.slice(0, 20)} dojel do cile.`;
+	const first = ahead?.slice(0, 20) ?? "---";
+	const second = behind?.slice(0, 20) ?? "---";
+	if (!ahead) return `\x1e ${first}     \x1f ${second}`;
+	if (lapsBehind > 0) {
+		const unit = lapsBehind === 1 ? "kolo" : lapsBehind < 5 ? "kola" : "kol";
+		return `\x1e ${first} (${lapsBehind} ${unit})     \x1f ${second}`;
+	}
+	const ticks = Math.max(0, Math.trunc(gapTicks));
+	const pad = (value) => String(value).padStart(2, "0");
+	const time = `${pad(Math.floor(ticks / 3600))}:${pad(Math.floor(ticks / 60) % 60)}.${pad(Math.floor(ticks % 60 * 10 / 6))}`;
+	return `\x1e ${first} (${time})     \x1f ${second}`;
+}
+
+export function getOriginalLapStandingsMessage(racers, playerTeam) {
+	const ranking = rankOriginalRacers(racers);
+	const position = ranking.findIndex((racer) => racer.team === playerTeam);
+	if (position < 0) return "";
+	const player = ranking[position];
+	const ahead = ranking[position - 1];
+	const behind = ranking[position + 1];
+	return formatOriginalStandingsMessage({ ahead: ahead?.name, behind: behind?.name,
+		gapTicks: Math.round((player.progress.lapStart - (ahead?.progress.lapStart ?? 0)) * 60 / 1000),
+		lapsBehind: ahead ? Math.max(0, ahead.progress.laps - player.progress.laps) : 0 });
+}
+
+export function createOriginalStandingsMessageState(training = false) {
+	return { training, text: training ? formatOriginalStandingsMessage({ training }) : "",
+		ticks: training ? ORIGINAL_STANDINGS_MESSAGE_TICKS : 0 };
+}
+
+export function stepOriginalStandingsMessage(state, text) {
+	if (state.training) return state;
+	if (text !== undefined) {
+		state.text = text;
+		state.ticks = ORIGINAL_STANDINGS_MESSAGE_TICKS;
+	} else if (state.ticks > 0) state.ticks--;
+	return state;
+}
+
 export function getOriginalStartLights(ticks) {
 	const released = ticks > 240;
 	return { released, visible: ticks < 367, y: released ? -(ticks - 241) : 0,

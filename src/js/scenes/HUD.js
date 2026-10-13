@@ -61,8 +61,17 @@ export default class HUD extends Phaser.Scene {
 			depotArrow.destroy();
 		});
 
-		const trainingText = scene.add.bitmapText(200, 460, "systemFont", "Trenink muzete kdykoliv ukoncit klavesou ESC.").setOrigin(0, 0).setDepth(100);
-		trainingText.setVisible(scene.scene.get("race").raceSettings.training);
+		const standingsText = scene.add.bitmapText(200, 460, "raceMessageFont", "", 8)
+			.setOrigin(0, 0).setDepth(100).setTint(0x000000);
+		standingsText.name = "lapStandingsMessage";
+		const updateStandings = () => {
+			const message = race.standingsMessage;
+			if (standingsText.text !== message.text) standingsText.setText(message.text);
+			standingsText.setVisible(message.ticks > 0);
+		};
+		updateStandings();
+		scene.events.on("update", updateStandings);
+		scene.events.once("shutdown", () => scene.events.off("update", updateStandings));
 
 		const pauseMenu = createPauseMenu(scene);
 

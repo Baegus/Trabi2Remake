@@ -11,8 +11,9 @@ import { createOriginalCarEffects } from "../modules/originalCarEffects.js";
 import { getGhostFrame, loadGhost, recordReplayFrame, saveGhost, updateGhostSprite } from "../modules/ghost.js";
 import { advanceOriginalRoute, createOriginalAiState, getOriginalRoadContext, stepOriginalAi } from "../modules/originalAi.js";
 import {
-	advanceOriginalChampionship, createOriginalRacerProgress, getOriginalGridSlots, getOriginalRaceSettings, getOriginalStartingGrid, getOriginalStartLights,
-	ORIGINAL_TRACK_NAMES, rankOriginalRacers, stepOriginalRacerProgress
+	advanceOriginalChampionship, createOriginalRacerProgress, createOriginalStandingsMessageState, formatOriginalStandingsMessage,
+	getOriginalGridSlots, getOriginalLapStandingsMessage, getOriginalRaceSettings, getOriginalStartingGrid, getOriginalStartLights,
+	ORIGINAL_RACERS, ORIGINAL_TRACK_NAMES, rankOriginalRacers, stepOriginalRacerProgress, stepOriginalStandingsMessage
 } from "../modules/originalRace.js";
 import { STATIC, b2Body_ApplyLinearImpulse, b2Body_GetLinearVelocity, b2Body_GetMass, b2Body_GetTransform, b2Body_GetWorldCenterOfMass, b2Body_SetTransform, b2Vec2, pxm } from "phaser-box2d/dist/PhaserBox2D.js";
 import { assignB2BodyBox, assignB2BodyCircle, createB2World, updateB2worldStepAndCollisions } from "../modules/box2dUtils.js";
@@ -85,6 +86,7 @@ export default class Race extends Phaser.Scene {
 		scene.finishTicks = null;
 		scene.finishing = false;
 		scene.countdownTicks = 0;
+		scene.standingsMessage = createOriginalStandingsMessageState(scene.raceSettings.training);
 
 		createB2World(scene); // create Box2D world
 
@@ -124,11 +126,14 @@ export default class Race extends Phaser.Scene {
 			car.isPlayer = position.isPlayer;
 			car.gridPosition = slots.indexOf(position.team) + 1;
 			car.raceProgress = createOriginalRacerProgress(position);
+			const driver = position.isPlayer ? scene.registry.get("playerName") || "Novy hrac" : ORIGINAL_RACERS[position.team].name;
+			car.raceName = `${String(ORIGINAL_RACERS[position.team].number).padStart(2, "0")} - ${driver}`.slice(0, 20);
 			car.aiState = createOriginalAiState();
 			return car;
 		});
 		scene.playerCar = scene.cars.find((car) => car.isPlayer);
 		scene.ghost = null;
+		scene.ghostProgress = null;
 		scene.ghostTick = 0;
 		scene.replayFrames = [];
 		if (scene.registry.get("currentRaceType") === "ghostRace") {
@@ -139,6 +144,9 @@ export default class Race extends Phaser.Scene {
 			scene.ghost = loadGhost(storage, map, scene.cache.binary.get(name + ".GHO"), scene.cache.binary.get(name + ".TRR"));
 			scene.ghost.map = map;
 			const firstFrame = getGhostFrame(scene.ghost, 0);
+			scene.ghostProgress = createOriginalRacerProgress(firstFrame);
+			scene.ghostPosition = firstFrame;
+			scene.ghost.raceName = `${String(ORIGINAL_RACERS[scene.ghost.team].number).padStart(2, "0")} - ${scene.ghost.name}`.slice(0, 20);
 			scene.ghostSprite = scene.add.image(firstFrame.x, firstFrame.y,
 				"TRABANT.FSF", scene.ghost.team * 4).setDepth(scene.playerCar.depth + 0.5).setAlpha(0.45);
 			scene.ghostSprite.name = "ghostCar";
@@ -255,7 +263,10 @@ export default class Race extends Phaser.Scene {
 
 	updateRaceProgress() {
 		if (!this.timerRunning || this.raceOver) return;
+		stepOriginalStandingsMessage(this.standingsMessage);
 		this.totalRaceTime += ORIGINAL_TICK_MS;
+		let playerLap = null;
+		let finishMessage;
 		for (const car of this.cars) {
 			const state = car.originalPhysics.snapshot();
 			const checkpoint = this.points.checkpoint;
@@ -265,12 +276,27 @@ export default class Race extends Phaser.Scene {
 			const event = stepOriginalRacerProgress(car.raceProgress, state, this.points,
 				this.totalRaceTime, this.raceSettings.laps);
 			if (event) car.originalPhysics.state.pitServiced = false;
+			if (event?.finished) finishMessage = formatOriginalStandingsMessage({ finished: car.raceName });
 			if (event && car.isPlayer) {
+				playerLap = event;
 				this.bestLapTime = car.raceProgress.bestLap;
 				this.scene.get("hud").events.emit("lapCompleted", event);
 				if (event.finished) this.events.emit("playerFinished", this.cars.filter((racer) => racer.raceProgress.finished).length);
 			}
 		}
+		const messageRacers = this.cars.map((car) => ({ team: car.team, progress: car.raceProgress, name: car.raceName }));
+		if (this.ghostProgress) {
+			const route = advanceOriginalRoute(this.ghostPosition, this.aiNodes1, this.ghostProgress.node);
+			if (route) Object.assign(this.ghostProgress, { node: route.node, distance: route.distance });
+			const event = stepOriginalRacerProgress(this.ghostProgress, this.ghostPosition, this.points,
+				this.totalRaceTime, this.raceSettings.laps);
+			if (event?.finished) finishMessage = formatOriginalStandingsMessage({ finished: this.ghost.raceName });
+			messageRacers.push({ team: 6, progress: this.ghostProgress, name: this.ghost.raceName });
+		}
+		if (playerLap && !playerLap.finished) {
+			stepOriginalStandingsMessage(this.standingsMessage, getOriginalLapStandingsMessage(messageRacers, this.playerCar.team));
+		}
+		if (finishMessage) stepOriginalStandingsMessage(this.standingsMessage, finishMessage);
 		this.currentLapTime = this.totalRaceTime - this.playerCar.raceProgress.lapStart;
 		const ranking = rankOriginalRacers(this.cars.map((car) => ({ team: car.team, progress: car.raceProgress })));
 		this.scene.get("hud").events.emit("raceProgress", {
@@ -360,6 +386,7 @@ export default class Race extends Phaser.Scene {
 	stepGhost() {
 		if (!this.ghost || this.raceOver || this.playerCar.raceProgress.finished) return;
 		const frame = getGhostFrame(this.ghost, this.ghostTick++);
+		this.ghostPosition = frame;
 		updateGhostSprite(this.ghostSprite, frame);
 		this.replayFrames.push(recordReplayFrame(this.playerCar.originalPhysics.snapshot(), this.playerCar.readControls()));
 	}
