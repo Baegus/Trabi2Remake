@@ -1,4 +1,4 @@
-import { ORIGINAL_TICK_MS, roundOriginal } from "./originalPhysics.js";
+import { getOriginalCarCorners, ORIGINAL_TICK_MS, roundOriginal } from "./originalPhysics.js";
 
 export const GHOST_LAPS = 4;
 export const ORIGINAL_GHOST_DIFFICULTY = 1;
@@ -52,8 +52,12 @@ export function getGhostFrame(ghost, tick) {
 	return frame && ghost.native ? { ...frame, x: frame.x + 320, y: frame.y + 240 } : frame;
 }
 
-export function updateGhostSprite(sprite, frame) {
-	if (frame) sprite.setPosition(frame.x, frame.y).setRotation(-frame.heading * Math.PI / 180);
+export function updateGhostSprite(sprite, frame, effects = null) {
+	if (!frame) return;
+	sprite.setPosition(frame.x, frame.y).setRotation(-frame.heading * Math.PI / 180);
+	const input = replayInput(frame.input);
+	effects?.step({ exhaust: getOriginalCarCorners(frame)[2], wheels: [],
+		smokeInterval: input.throttle && !input.handbrake ? 2 : 5 });
 }
 
 export function loadGhost(storage, map, originalTime, originalReplay) {

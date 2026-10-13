@@ -134,6 +134,7 @@ export default class Race extends Phaser.Scene {
 		});
 		scene.playerCar = scene.cars.find((car) => car.isPlayer);
 		scene.ghost = null;
+		scene.ghostEffects = null;
 		scene.ghostProgress = null;
 		scene.ghostTick = 0;
 		scene.replayFrames = [];
@@ -152,6 +153,7 @@ export default class Race extends Phaser.Scene {
 				"TRABANT.FSF", scene.ghost.team * 4).setDepth(scene.playerCar.depth + 0.5).setAlpha(0.45);
 			scene.ghostSprite.name = "ghostCar";
 			updateGhostSprite(scene.ghostSprite, firstFrame);
+			scene.ghostEffects = scene.carEffects.register(scene.ghostSprite);
 		}
 		scene.originalClock = createOriginalClock();
 		scene.physicsBackend = null;
@@ -404,7 +406,7 @@ export default class Race extends Phaser.Scene {
 		if (!this.ghost || this.raceOver || this.playerCar.raceProgress.finished) return;
 		const frame = getGhostFrame(this.ghost, this.ghostTick++);
 		this.ghostPosition = frame;
-		updateGhostSprite(this.ghostSprite, frame);
+		updateGhostSprite(this.ghostSprite, frame, this.ghostEffects);
 		this.replayFrames.push(recordReplayFrame(this.playerCar.originalPhysics.snapshot(), this.playerCar.readControls()));
 	}
 
