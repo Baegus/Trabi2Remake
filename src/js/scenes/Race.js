@@ -6,7 +6,7 @@ import { parseIL } from "../modules/il";
 import { parseSP1SP2 } from "../modules/sp1sp2";
 import { parseLAP } from "../modules/lap";
 import { createCar } from "../modules/car";
-import { createOriginalClock, ORIGINAL_TICK_MS, resolveOriginalCarContacts } from "../modules/originalPhysics.js";
+import { createOriginalClock, getOriginalSurfaceType, ORIGINAL_TICK_MS, resolveOriginalCarContacts } from "../modules/originalPhysics.js";
 import { createOriginalCarEffects } from "../modules/originalCarEffects.js";
 import { createOriginalCameraState, getOriginalCameraCenter, stepOriginalCamera } from "../modules/originalCamera.js";
 import { getGhostFrame, loadGhost, recordReplayFrame, saveGhost, updateGhostSprite } from "../modules/ghost.js";
@@ -406,7 +406,11 @@ export default class Race extends Phaser.Scene {
 		if (!this.ghost || this.raceOver || this.playerCar.raceProgress.finished) return;
 		const frame = getGhostFrame(this.ghost, this.ghostTick++);
 		this.ghostPosition = frame;
-		updateGhostSprite(this.ghostSprite, frame, this.ghostEffects);
+		updateGhostSprite(this.ghostSprite, frame, this.ghostEffects, (wheel) => {
+			const tile = this.tilemap.getTileAt(Math.floor(wheel.x / this.tilemap.tileWidth), Math.floor(wheel.y / this.tilemap.tileHeight));
+			const offroad = window.SYNQuery?.isOffroad("POZ.SYN", this.tilemap, wheel.x, wheel.y) ?? false;
+			return getOriginalSurfaceType(tile?.index ?? -1, offroad);
+		});
 		this.replayFrames.push(recordReplayFrame(this.playerCar.originalPhysics.snapshot(), this.playerCar.readControls()));
 	}
 

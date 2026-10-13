@@ -1,4 +1,4 @@
-import { getOriginalCarCorners, ORIGINAL_TICK_MS, roundOriginal } from "./originalPhysics.js";
+import { getOriginalCarCorners, getOriginalWheelPositions, ORIGINAL_TICK_MS, roundOriginal } from "./originalPhysics.js";
 
 export const GHOST_LAPS = 4;
 export const ORIGINAL_GHOST_DIFFICULTY = 1;
@@ -52,11 +52,26 @@ export function getGhostFrame(ghost, tick) {
 	return frame && ghost.native ? { ...frame, x: frame.x + 320, y: frame.y + 240 } : frame;
 }
 
-export function updateGhostSprite(sprite, frame, effects = null) {
+export function updateGhostSprite(sprite, frame, effects = null, surfaceAt = () => 0) {
 	if (!frame) return;
 	sprite.setPosition(frame.x, frame.y).setRotation(-frame.heading * Math.PI / 180);
+	if (!effects) return;
 	const input = replayInput(frame.input);
-	effects?.step({ exhaust: getOriginalCarCorners(frame)[2], wheels: [],
+	const wheels = getOriginalWheelPositions(frame);
+	const surfaces = wheels.map(surfaceAt);
+	const previous = effects.previousGhostFrame;
+	const skidPairs = [];
+	if (previous) {
+		const dx = frame.x - previous.x;
+		const dy = frame.y - previous.y;
+		const radians = frame.heading * Math.PI / 180;
+		const forward = -Math.sin(radians) * dx - Math.cos(radians) * dy;
+		if (forward > 1 && input.handbrake) {
+			skidPairs.push([surfaces[1] === 0 ? 1 : null, surfaces[0] === 0 ? 0 : null]);
+		}
+	}
+	effects.previousGhostFrame = frame;
+	effects.step({ exhaust: getOriginalCarCorners(frame)[2], wheels, surfaces, skidPairs,
 		smokeInterval: input.throttle && !input.handbrake ? 2 : 5 });
 }
 
