@@ -4,6 +4,7 @@ import { createMenuButton } from "../../modules/menu";
 import { createTextInput } from "../../modules/textInput";
 import { getOriginalRaceSettings } from "../../modules/originalRace.js";
 import { parseMenuLayout } from "../../formats/mnu.js";
+import { ORIGINAL_GHOST_DIFFICULTY } from "../../modules/ghost.js";
 
 const debugging = process.env.DEBUG == "true";
 
@@ -39,10 +40,6 @@ export default class RaceMenu extends Phaser.Scene {
 		scene.registry.set("playerName", playerName);
 		let team = scene.registry.get("playerTeam") ?? defaultTeam;
 		let map = championship?.track ?? scene.registry.get("currentMap") ?? defaultMap;
-		if (championship) {
-			scene.add.bitmapText(400, 45, "systemFont", championship.phase === "training" ? "Trenink" : "Zavod").setOrigin(0, 0);
-		}
-
 
 
 		// LEFT COLUMN:
@@ -109,7 +106,7 @@ export default class RaceMenu extends Phaser.Scene {
 			texture: "SW1.FSF",
 			alphaToggle: false,
 			clickCallback: () => {
-				setDiff(0);
+				setDiff(0, true);
 			}
 		});
 		const mediumDiffButton = createMenuButton(scene,{
@@ -118,7 +115,7 @@ export default class RaceMenu extends Phaser.Scene {
 			texture: "SW2.FSF",
 			alphaToggle: false,
 			clickCallback: () => {
-				setDiff(1);
+				setDiff(1, true);
 			}
 		});
 		const hardDiffButton = createMenuButton(scene,{
@@ -127,20 +124,21 @@ export default class RaceMenu extends Phaser.Scene {
 			texture: "SW3.FSF",
 			alphaToggle: false,
 			clickCallback: () => {
-				setDiff(2);
+				setDiff(2, true);
 			}
 		});
 
 		const diffButtons = [easyDiffButton, mediumDiffButton, hardDiffButton];
-		const setDiff = (val) => {
-			if (championship?.track > 0) val = scene.registry.get("difficulty");
-			scene.registry.set("difficulty", val);
-			diffButtons.forEach((btn, i) => {
-				btn.setFrame(i === val ? 1 : 0);
-				console.log("Difficulty set to", val);
-				console.log("frame should be", i === val ? 1 : 0);
-
-			});
+		let difficultyFlash;
+		const showDifficulty = (value) => diffButtons.forEach((button, index) => button.setFrame(index === value ? 1 : 0));
+		const setDiff = (val, clicked = false) => {
+			difficultyFlash?.remove(false);
+			const selected = ghostRace ? ORIGINAL_GHOST_DIFFICULTY : championship?.track > 0 ? scene.registry.get("difficulty") : val;
+			scene.registry.set("difficulty", selected);
+			showDifficulty(ghostRace && clicked ? val : selected);
+			if (ghostRace && clicked && val !== selected) {
+				difficultyFlash = scene.time.delayedCall(100, () => showDifficulty(selected));
+			}
 		};
 		setDiff(scene.registry.get("difficulty") || 0);
 
@@ -188,11 +186,11 @@ export default class RaceMenu extends Phaser.Scene {
 				setLaps(-1);
 			}
 		});
-		const lapsText = scene.add.bitmapText(553, 227, "systemFont", String(settings().laps)).setOrigin(0,0);
+		const lapsText = scene.add.bitmapText(553, 227, "systemFont", String(settings().laps).padStart(2, "0")).setOrigin(0,0);
 		const setLaps = (offset) => {
 			if (championship || currentRaceType === "ghostRace") return;
 			scene.registry.set("raceLaps", Math.max(1, Math.min(99, settings().laps + offset)));
-			lapsText.setText(String(settings().laps));
+			lapsText.setText(String(settings().laps).padStart(2, "0"));
 		};
 		const moreLapsButton = createMenuButton(scene,{
 			x: 570,
@@ -217,6 +215,7 @@ export default class RaceMenu extends Phaser.Scene {
 			scene.registry.set("raceOpponents", Math.max(0, Math.min(5, settings().opponents + offset)));
 			opponentsText.setText(String(settings().opponents));
 		};
+		if (ghostRace) opponentsText.setText("1");
 		const moreOpponentsButton = createMenuButton(scene,{
 			x: 570,
 			y: 250,
@@ -236,6 +235,7 @@ export default class RaceMenu extends Phaser.Scene {
 				scene.scene.start("saveMenu");
 			}
 		});
+		if (!championship) saveButton.setFrame(1).setAlpha(1).disableInteractive();
 
 
 		// BOTTOM ROW:
@@ -257,7 +257,7 @@ export default class RaceMenu extends Phaser.Scene {
 				if (!ghostRace) scene.showStandings();
 			}
 		});
-		if (ghostRace) standingsButton.setFrame(1).setAlpha(1).disableInteractive();
+		if (!championship) standingsButton.setFrame(1).setAlpha(1).disableInteractive();
 
 		const startRaceButton = createMenuButton(scene,{
 			x: 469,

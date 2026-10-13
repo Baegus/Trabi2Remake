@@ -16,7 +16,7 @@ import { assignB2BodyBox } from "../modules/box2dUtils.js";
 import { getTransmissionStats, getParKeyForDifficulty } from "./carParams.js";
 import { createOriginalCarController } from "./originalCar.js";
 import { getOriginalDamageFrame } from "./originalPhysics.js";
-import { ORIGINAL_GHOST_SETTINGS } from "./ghost.js";
+import { ORIGINAL_GHOST_DIFFICULTY, ORIGINAL_GHOST_SETTINGS } from "./ghost.js";
 
 const clampTransmission = (v) => Phaser.Math.Clamp(v, 0, 21);
 
@@ -198,8 +198,8 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	});
 
 	// Load variables from registry with defaults
-	const difficulty = scene.registry.get("difficulty") ?? 1;
 	const ghostRace = scene.registry.get("currentRaceType") === "ghostRace";
+	const difficulty = ghostRace ? ORIGINAL_GHOST_DIFFICULTY : scene.registry.get("difficulty") ?? 1;
 	const transmission = ghostRace ? ORIGINAL_GHOST_SETTINGS.transmission : scene.registry.get("transmissionVal") ?? 0;
 	const brakesVal = ghostRace ? ORIGINAL_GHOST_SETTINGS.brakes : scene.registry.get("brakesVal") ?? 0;
 	const tiresVal = ghostRace ? ORIGINAL_GHOST_SETTINGS.tires : scene.registry.get("tiresVal") ?? 0;

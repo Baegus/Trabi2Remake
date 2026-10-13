@@ -140,7 +140,7 @@ export default class Race extends Phaser.Scene {
 			scene.ghost.map = map;
 			const firstFrame = getGhostFrame(scene.ghost, 0);
 			scene.ghostSprite = scene.add.image(firstFrame.x, firstFrame.y,
-				"TRABANT.FSF", scene.ghost.team * 4).setDepth(9).setAlpha(0.45);
+				"TRABANT.FSF", scene.ghost.team * 4).setDepth(scene.playerCar.depth + 0.5).setAlpha(0.45);
 			scene.ghostSprite.name = "ghostCar";
 			updateGhostSprite(scene.ghostSprite, firstFrame);
 		}

@@ -1,6 +1,7 @@
 import { ORIGINAL_TICK_MS, roundOriginal } from "./originalPhysics.js";
 
 export const GHOST_LAPS = 4;
+export const ORIGINAL_GHOST_DIFFICULTY = 1;
 export const ORIGINAL_GHOST_SETTINGS = Object.freeze({ transmission: 10, brakes: 10, tires: 1 });
 const MAX_FRAMES = 500000;
 
