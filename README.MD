@@ -15,12 +15,12 @@ The goal of this project is **NOT a full decompilation** or a 1:1 replication of
  - [x] **MAP** *(level/track tilesets)*
  - [x] **3D** *(3D objects)*
  - [x] **3DM** *(positions of 3D models within each track)*
- - [ ] **GHO** *(lap times for the Ghost Race mode, which is not yet implemented)*
+ - [x] **GHO** *(lap times for the Ghost Race mode)*
  - [x] **IL1, IL2** *(AI node positions)*
  - [x] **TRR** *(replay data - fully parsed, but not yet implemented)*
  - [x] **SND** *(sounds and music)*
- - [ ] **SAV** *(save files); ~50% progress*
- - [ ] **SB** *(probably just a list of all assets)*
+ - [ ] **SAV** *(save files); ~50% progress - not necessary for this project, saving is handled via localStorage*
+ - [ ] **SB** *(probably just a list of all assets - not necessary for this project)*
  - [x] **LAP** *(coordinates of track checkpoints - finish line, a mid-track checkpoint and the repair depo)*
  - [x] **PAR** *(car parameters; ~95 progress)*
  - [x] **SP1, SP2** *(positions of additional sprites from ONIKY.FSF and DIVACI.FSF)*
