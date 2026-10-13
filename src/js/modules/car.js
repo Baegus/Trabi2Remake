@@ -13,7 +13,7 @@ import {
 	pxm
 } from "phaser-box2d/dist/PhaserBox2D.js";
 import { assignB2BodyBox } from "../modules/box2dUtils.js";
-import { getTransmissionStats, getParKeyForDifficulty } from "./carParams.js";
+import { getTransmissionStats, getParKeyForDifficulty, getOriginalRaceParKey } from "./carParams.js";
 import { createOriginalCarController } from "./originalCar.js";
 import { getOriginalDamageFrame } from "./originalPhysics.js";
 import { ORIGINAL_GHOST_DIFFICULTY, ORIGINAL_GHOST_SETTINGS } from "./ghost.js";
@@ -118,7 +118,7 @@ const buildTransmissionProfile = (stats, transmissionVal) => {
 	};
 };
 
-export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
+export const createCar = (scene, x, y, team = 0, isPlayer = false, opponentSlot = 0) => {
 	const car = scene.add.container(x+55, y+53);
 	car.name = `car${team}`;
 
@@ -204,13 +204,10 @@ export const createCar = (scene, x, y, team = 0, isPlayer = false) => {
 	const brakesVal = ghostRace ? ORIGINAL_GHOST_SETTINGS.brakes : scene.registry.get("brakesVal") ?? 0;
 	const tiresVal = ghostRace ? ORIGINAL_GHOST_SETTINGS.tires : scene.registry.get("tiresVal") ?? 0;
 
-	// All cars use the same PAR file based on difficulty (Easy→PAR1, Medium→PAR3, Hard→PAR5).
-	// Car type modifiers (hardcoded in the original EXE) differentiate opponent stats.
-	// Player is car type 4 (all modifiers zero). Opponent types map from team index.
-	const parKey = getParKeyForDifficulty(difficulty);
+	const parKey = getOriginalRaceParKey(difficulty, isPlayer ? 0 : opponentSlot);
 	const carType = isPlayer ? 4 : team;
 	const parData = scene.cache.binary.get(parKey);
-	const stats = getTransmissionStats(parData, difficulty, transmission, carType);
+	const stats = getTransmissionStats(scene.cache.binary.get(getParKeyForDifficulty(difficulty)), difficulty, transmission, carType);
 	car.aiControls = {};
 	car.readControls = () => !scene.timerRunning || car.originalPhysics.state.pitTicks > 0 ? {} : !isPlayer || car.raceProgress?.finished ? car.aiControls : {
 		left: cursors.left.isDown || keys.A.isDown,

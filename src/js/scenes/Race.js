@@ -118,12 +118,12 @@ export default class Race extends Phaser.Scene {
 
 		scene.carEffects = createOriginalCarEffects(scene);
 		const playerTeam = scene.registry.get("playerTeam") ?? 0;
-		const teams = [playerTeam, ...Array.from({ length: 6 }, (_, team) => team).filter((team) => team !== playerTeam)
+		const teams = [playerTeam, ...Array.from({ length: 5 }, (_, index) => index + 1 === playerTeam ? 0 : index + 1)
 			.slice(0, scene.raceSettings.opponents)];
 		const previousResults = scene.registry.get("lastRaceResults") ?? [];
 		const slots = getOriginalGridSlots(teams, playerTeam, previousResults, scene.registry.get("currentRaceType") === "championship");
-		scene.cars = getOriginalStartingGrid(scene.points.start, teams, playerTeam, slots).map((position) => {
-			const car = createCar(scene, position.x - 55, position.y - 53, position.team, position.isPlayer);
+		scene.cars = getOriginalStartingGrid(scene.points.start, teams, playerTeam, slots).map((position, opponentSlot) => {
+			const car = createCar(scene, position.x - 55, position.y - 53, position.team, position.isPlayer, opponentSlot);
 			car.isPlayer = position.isPlayer;
 			car.gridPosition = slots.indexOf(position.team) + 1;
 			car.raceProgress = createOriginalRacerProgress(position);

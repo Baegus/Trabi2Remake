@@ -22,14 +22,23 @@ export function readPascalReal48(bytes, offset) {
 }
 
 /**
- * PAR file key for a given difficulty level.
- * The original game only uses PAR1 (Easy), PAR3 (Medium), PAR5 (Hard).
- * PAR2 and PAR4 exist on disk but are never loaded by the EXE.
+ * Statistics-menu PAR file key. Race constructors use a separate table.
  */
 const DIFFICULTY_PAR_MAP = ["PAR1.PAR", "PAR3.PAR", "PAR5.PAR"];
 
 export function getParKeyForDifficulty(diff) {
 	return DIFFICULTY_PAR_MAP[diff] ?? DIFFICULTY_PAR_MAP[0];
+}
+
+const RACE_PAR_MAP = [
+	["PAR1.PAR", "PAR3.PAR", "PAR4.PAR", "PAR4.PAR", "PAR5.PAR", "PAR5.PAR"],
+	["PAR2.PAR", "PAR2.PAR", "PAR3.PAR", "PAR3.PAR", "PAR4.PAR", "PAR5.PAR"],
+	["PAR4.PAR", "PAR2.PAR", "PAR3.PAR", "PAR3.PAR", "PAR4.PAR", "PAR5.PAR"]
+];
+
+export function getOriginalRaceParKey(diff, opponentSlot = 0) {
+	const records = RACE_PAR_MAP[diff] ?? RACE_PAR_MAP[0];
+	return records[opponentSlot] ?? records[0];
 }
 
 /**
